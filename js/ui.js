@@ -210,6 +210,7 @@ const UI = {
   _syncEarthOrientation(isNight) {
     const host = this.$('earthArcSection') || this.$('earthArc');
     if (host) host.classList.toggle('earth-arc--night', !!isNight);
+    document.documentElement.setAttribute('data-sky', isNight ? 'night' : 'day');
     const hemi = document.getElementById('earthHemispheres');
     if (hemi) hemi.setAttribute('transform', isNight ? 'rotate(180 50 50)' : '');
     // Day: S toward Day mark (top), N toward Night (bottom), E=rise (left), W=set (right).
@@ -433,7 +434,7 @@ const UI = {
       visibility: `<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>`,
       pressure: `<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>`,
       bolt: `<path d="M13 2 3 14h7l-1 8 10-14h-7l1-8z"/>`,
-      aqi: `<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>`,
+      aqi: `<path d="M11 20A7 7 0 0 1 9.8 6.1C15.6 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>`,
       pollen: `<circle cx="12" cy="12" r="2.5"/><path d="M12 5v-2"/><path d="M12 21v-2"/><path d="M5 12H3"/><path d="M21 12h-2"/><path d="M6.8 6.8 5.4 5.4"/><path d="M18.6 18.6l-1.4-1.4"/><path d="M17.2 6.8l1.4-1.4"/><path d="M5.4 18.6l1.4-1.4"/>`,
       swap: `<path d="M7 3v14"/><path d="M4 14l3 3 3-3"/><path d="M17 21V7"/><path d="M14 10l-3-3-3 3"/>`,
     };

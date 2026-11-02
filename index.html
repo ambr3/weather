@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="light" data-sky="day">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -21,10 +21,10 @@
   <link rel="apple-touch-icon" href="assets/icons/pwa-192.png">
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/pwa-192.png">
 
-  <script src="js/theme-boot.js?v=0.7.9"></script>
-  <link rel="stylesheet" href="seclusa-base.css?v=0.7.9">
-  <link rel="stylesheet" href="css/style.css?v=0.7.9">
-  <link rel="stylesheet" href="css/responsive.css?v=0.7.9">
+  <script src="js/theme-boot.js?v=0.7.10"></script>
+  <link rel="stylesheet" href="seclusa-base.css?v=0.7.10">
+  <link rel="stylesheet" href="css/style.css?v=0.7.10">
+  <link rel="stylesheet" href="css/responsive.css?v=0.7.10">
 </head>
 <body>
 
@@ -49,35 +49,6 @@
       </div>
     </div>
     <div class="header__controls">
-    </div>
-    <span class="header__attribution">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> · <a href="https://open-meteo.com/license" target="_blank" rel="noopener noreferrer">CC BY 4.0</a></span>
-  </header>
-
-  <section class="instructions hidden" id="instructions" aria-label="How to use">
-    <button class="instructions__close" id="helpClose" aria-label="Close instructions">&times;</button>
-    <h2 class="instructions__title">How to use Seclusa Weather</h2>
-    <ol class="instructions__list">
-      <li><strong>Search or locate</strong> — type a city in the search box, or tap the crosshair button to use your current location.</li>
-      <li><strong>View the forecast</strong> — the main card shows today's conditions, sun/moon times, and an arc of daylight. Below it are the hourly, 7&nbsp;or&nbsp;14&nbsp;day forecast, and a wind compass for your area.</li>
-      <li><strong>Switch units</strong> — tap the units button (°C) in the top bar to change temperature, wind speed, and visibility units.</li>
-      <li><strong>Explore conditions</strong> — the Conditions card groups precipitation, wind, humidity, UV index, visibility, pressure, air quality, and pollen.</li>
-      <li><strong>Works offline</strong> — the last forecast is saved, so the app works without a connection. It is kept for 3 days after you last open the app.</li>
-      <li><strong>Remember</strong> — in settings, the "Remember" button is highlighted while the app saves your last place on this device. Tap it to stop saving; this also clears what is already saved.</li>
-      <li><strong>Install it</strong> — tap the install banner on Android, or on iPhone use Share &rarr; "Add to Home Screen".</li>
-    </ol>
-    <div class="instructions__actions">
-      <button class="instructions__action" id="clearDataBtn" type="button">Erase my data</button>
-      <p class="instructions__note">Deletes the saved city, coordinates, settings, and every cached forecast from this device.</p>
-    </div>
-  </section>
-
-  <main>
-    <div class="ptr-indicator" id="ptrIndicator" role="status" aria-live="polite">
-      <span class="ptr-indicator__spinner" aria-hidden="true"></span>
-      <span class="ptr-indicator__label">Pull to refresh</span>
-    </div>
-
-    <section class="search-section">
       <div class="settings-menu" id="settingsMenu">
         <button class="icon-btn" id="settingsBtn" aria-label="Settings" aria-expanded="false">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -120,16 +91,45 @@
               </div>
               <div class="units-menu__row">
                 <span class="units-menu__label">Wind</span>
-                <button class="units-menu__btn" id="windToggle" aria-pressed="false"><span id="windLabel">km/h</span></button>
+                <button class="units-menu__btn" id="windToggle" aria-pressed="false"><span id="windLabel">mph</span></button>
               </div>
               <div class="units-menu__row">
                 <span class="units-menu__label">Visibility</span>
-                <button class="units-menu__btn" id="visToggle" aria-pressed="false"><span id="visLabel">km</span></button>
+                <button class="units-menu__btn" id="visToggle" aria-pressed="false"><span id="visLabel">mi</span></button>
               </div>
             </div>
           </div>
         </div>
       </div>
+    </div>
+    <span class="header__attribution">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> · <a href="https://open-meteo.com/license" target="_blank" rel="noopener noreferrer">CC BY 4.0</a></span>
+  </header>
+
+  <section class="instructions hidden" id="instructions" aria-label="How to use">
+    <button class="instructions__close" id="helpClose" aria-label="Close instructions">&times;</button>
+    <h2 class="instructions__title">How to use Seclusa Weather</h2>
+    <ol class="instructions__list">
+      <li><strong>Search or locate</strong> — type a city in the search box, or tap the crosshair button to use your current location.</li>
+      <li><strong>View the forecast</strong> — the main card shows today's conditions, sun/moon times, and an arc of daylight. Below it are the hourly, 7&nbsp;or&nbsp;14&nbsp;day forecast, and a wind compass for your area.</li>
+      <li><strong>Switch units</strong> — tap the units button (°C) in the top bar to change temperature, wind speed, and visibility units.</li>
+      <li><strong>Explore conditions</strong> — the Conditions card groups precipitation, wind, humidity, UV index, visibility, pressure, air quality, and pollen.</li>
+      <li><strong>Works offline</strong> — the last forecast is saved, so the app works without a connection. It is kept for 3 days after you last open the app.</li>
+      <li><strong>Remember</strong> — in settings, the "Remember" button is highlighted while the app saves your last place on this device. Tap it to stop saving; this also clears what is already saved.</li>
+      <li><strong>Install it</strong> — tap the install banner on Android, or on iPhone use Share &rarr; "Add to Home Screen".</li>
+    </ol>
+    <div class="instructions__actions">
+      <button class="instructions__action" id="clearDataBtn" type="button">Erase my data</button>
+      <p class="instructions__note">Deletes the saved city, coordinates, settings, and every cached forecast from this device.</p>
+    </div>
+  </section>
+
+  <main>
+    <div class="ptr-indicator" id="ptrIndicator" role="status" aria-live="polite">
+      <span class="ptr-indicator__spinner" aria-hidden="true"></span>
+      <span class="ptr-indicator__label">Pull to refresh</span>
+    </div>
+
+    <section class="search-section">
       <form class="search-form" id="searchForm" role="search">
         <label for="searchInput" class="sr-only">Search city</label>
         <input
@@ -243,7 +243,7 @@
 
   <footer class="footer">
     <p>
-      Seclusa Weather v0.7.9 &mdash; No tracking. No ads. No cookies.
+      Seclusa Weather v0.7.10 &mdash; No tracking. No ads. No cookies.
       <br>
       Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a> &mdash; <a href="https://open-meteo.com/license" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>.
       <br>
@@ -260,18 +260,18 @@
 
   <div class="hourly-modal hidden" id="hourlyModal" role="dialog" aria-modal="true" aria-label="Forecast details"></div>
 
-  <script src="js/config.js?v=0.7.9"></script>
-  <script src="js/store.js?v=0.7.9"></script>
-  <script src="js/theme.js?v=0.7.9"></script>
-  <script src="js/utils.js?v=0.7.9"></script>
-  <script src="js/icons.js?v=0.7.9"></script>
-  <script src="js/api.js?v=0.7.9"></script>
-  <script src="js/ui.js?v=0.7.9"></script>
-  <script src="js/ui-current.js?v=0.7.9"></script>
-  <script src="js/ui-details.js?v=0.7.9"></script>
-  <script src="js/ui-forecast.js?v=0.7.9"></script>
-  <script src="js/ui-modal.js?v=0.7.9"></script>
-  <script src="js/ui-chart.js?v=0.7.9"></script>
-  <script src="js/app.js?v=0.7.9"></script>
+  <script src="js/config.js?v=0.7.10"></script>
+  <script src="js/store.js?v=0.7.10"></script>
+  <script src="js/theme.js?v=0.7.10"></script>
+  <script src="js/utils.js?v=0.7.10"></script>
+  <script src="js/icons.js?v=0.7.10"></script>
+  <script src="js/api.js?v=0.7.10"></script>
+  <script src="js/ui.js?v=0.7.10"></script>
+  <script src="js/ui-current.js?v=0.7.10"></script>
+  <script src="js/ui-details.js?v=0.7.10"></script>
+  <script src="js/ui-forecast.js?v=0.7.10"></script>
+  <script src="js/ui-modal.js?v=0.7.10"></script>
+  <script src="js/ui-chart.js?v=0.7.10"></script>
+  <script src="js/app.js?v=0.7.10"></script>
 </body>
 </html>

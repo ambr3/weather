@@ -4,6 +4,13 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
+## 0.7.10 — 2026-11-02
+
+- Sky-tinted grid and surfaces: day baby-blue / night black (light) or white (dark), shared across page, shell, and cards.
+- Header and footer as elevated shell cards; settings squircle moved into the header.
+- Drop fixed-layer `drop-shadow` so the grid no longer flickers while scrolling.
+- Default units: °C, mph, miles.
+
 ## 0.7.9 — 2026-11-02
 
 - Align `Permissions-Policy` metas with header samples (`browsing-topics=()`).

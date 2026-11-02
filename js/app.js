@@ -7,9 +7,9 @@ const App = {
     const allowed = ['kmh', 'mph', 'kn', 'ms'];
     const w = Utils.safeGet('windUnit', null);
     if (allowed.includes(w)) return w;
-    return Utils.safeGet('units', null) === 'imperial' ? 'mph' : 'kmh';
+    return CONFIG.DEFAULT_WIND_UNIT;
   })(),
-  visUnit: Utils.safeGet('visUnit', null) === 'mi' ? 'mi' : 'km',
+  visUnit: Utils.safeGet('visUnit', null) === 'km' ? 'km' : CONFIG.DEFAULT_VIS_UNIT,
   pressUnit: Utils.safeGet('pressUnit', null) === 'inHg' ? 'inHg' : 'hPa',
   chartMode: (() => {
     const m = Utils.safeGet('chartMode', 'temp');

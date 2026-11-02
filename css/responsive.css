@@ -1,7 +1,12 @@
 @media (max-width: 768px) {
+  .header,
+  .footer {
+    width: min(900px, calc(100% - 2rem));
+    padding: 1rem 1.15rem;
+  }
+
   .header {
-    padding: 1rem 1.25rem;
-    padding-top: max(1rem, env(safe-area-inset-top));
+    margin-top: max(0.75rem, env(safe-area-inset-top));
   }
 
   .header__logo h1 {
