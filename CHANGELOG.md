@@ -4,6 +4,15 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
+## 0.7.8 — 2026-11-02
+
+- README: accept Observatory **B** on GitHub Pages (missing XFO/XCTO are server-header limits, not app holes); link the scan PDF.
+- Keep hardened `_headers` / `.htaccess` for hosts that honour them; no Cloudflare chase.
+
+## 0.7.7 — 2026-11-02
+
+- HTTP header files and CSP metas hardened (`default-src 'none'`, XCTO, XFO, COOP/CORP, HSTS). GitHub Pages still cannot emit them, so live Observatory stays ~B.
+
 ## 0.7.6 — 2026-11-02
 
 - Background grid: blue in light mode, cool grey in dark mode (replaces the warm orange lines). Cache bump so installs pick up the new colours.

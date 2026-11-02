@@ -57,13 +57,15 @@ http_hits=$(grep -RInE --include='*.html' --include='*.js' --include='*.css' --i
 pass "no mixed-content http://"
 
 # --- CSP / connect-src parity with config + SW ---
-# The app is published on Cloudflare Pages, which reads _headers. There is no
-# .htaccess or vercel.json here: this app has never been hosted on Apache or
-# Vercel, and the test used to name files that do not exist, so those lines
-# were failing and nothing ran them.
+# HTTP Observatory A+ needs real HTTP headers. Cloudflare Pages reads
+# _headers; Apache reads .htaccess. GitHub Pages serves neither — a scan of
+# *.github.io will stay around B/75 even when these files are correct.
+[ -f _headers ] || bad "_headers missing (Cloudflare Pages / Netlify)"
+[ -f .htaccess ] || bad ".htaccess missing (Apache parity for A+)"
 for host in api.open-meteo.com air-quality-api.open-meteo.com geocoding-api.open-meteo.com; do
   grep -q "$host" index.html || bad "CSP meta missing $host"
   grep -q "$host" _headers || bad "_headers missing $host"
+  grep -q "$host" .htaccess || bad ".htaccess missing $host"
   grep -q "$host" sw.js || bad "sw.js missing $host"
   grep -q "$host" js/config.js || bad "config.js missing $host"
 done
@@ -76,10 +78,15 @@ grep -q 'Never intercept Open-Meteo' sw.js || bad "sw must not intercept Open-Me
 grep -q 'offline-box' css/style.css || bad "offline-box CSS missing from style.css"
 grep -q '_userBusy' js/app.js || bad "user-busy guard for silent refresh missing"
 ! grep -q 'preconnect' index.html || bad "preconnect should be removed (privacy)"
-grep -q "frame-ancestors 'none'" _headers || bad "frame-ancestors missing from _headers"
-grep -q 'X-Frame-Options' _headers || bad "X-Frame-Options missing from _headers"
-grep -q "font-src 'self'" index.html offline.html _headers || bad "font-src 'self' missing from CSP samples"
-! grep -q "'unsafe-inline'" index.html offline.html _headers || bad "CSP still allows unsafe-inline"
+grep -q "frame-ancestors 'none'" _headers .htaccess || bad "frame-ancestors missing from headers"
+grep -q 'X-Frame-Options' _headers .htaccess || bad "X-Frame-Options missing from headers"
+grep -q 'X-Content-Type-Options' _headers .htaccess || bad "X-Content-Type-Options missing (Observatory −5)"
+grep -q 'Cross-Origin-Opener-Policy' _headers .htaccess || bad "COOP missing from headers"
+grep -q 'Cross-Origin-Resource-Policy' _headers .htaccess || bad "CORP missing from headers"
+grep -q "default-src 'none'" _headers .htaccess index.html offline.html || bad "default-src 'none' missing"
+grep -q 'upgrade-insecure-requests' _headers .htaccess index.html offline.html || bad "upgrade-insecure-requests missing"
+grep -q "font-src 'self'" index.html offline.html _headers .htaccess || bad "font-src 'self' missing from CSP samples"
+! grep -q "'unsafe-inline'" index.html offline.html _headers .htaccess || bad "CSP still allows unsafe-inline"
 grep -q "dynCSS" js/utils.js || bad "dynCSS helper missing"
 inline_hits=$(grep -nE ' style=|\.style\.[a-zA-Z]' js/ui.js js/ui-*.js js/app.js index.html offline.html 2>/dev/null || true)
 [ -z "$inline_hits" ] || bad "inline style sinks remain:\n$inline_hits"

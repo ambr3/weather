@@ -1,0 +1,10 @@
+---
+description: HTTP Observatory B on GitHub Pages is accepted for this app
+alwaysApply: true
+---
+
+# HTTP Observatory
+
+GitHub Pages cannot emit custom security headers (`_headers` / `.htaccess` are ignored). Observatory therefore scores this app about **B / 75** (XFO −20, XCTO −5). That grade is **accepted** here.
+
+Do not chase A+ via Cloudflare or other proxies unless Dave asks. Keep the in-page meta CSP tight (no `'unsafe-inline'` / `'unsafe-eval'`, explicit `connect-src`). Keep the Observatory PDF in the repo when a new scan is dropped in.
