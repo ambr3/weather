@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Seclusa Weather - No tracking, no ads, no cookies. Just weather.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Seclusa Weather">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(self), gyroscope=(), magnetometer=(), accelerometer=(), payment=(), usb=(), midi=(), bluetooth=(), serial=(), interest-cohort=(), idle-detection=(), screen-wake-lock=(), picture-in-picture=(), fullscreen=(), clipboard-read=(), clipboard-write=()">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; child-src 'none'; media-src 'self'; connect-src 'self' https://api.open-meteo.com https://air-quality-api.open-meteo.com https://geocoding-api.open-meteo.com; img-src 'self'; font-src 'self'; style-src 'self'; script-src 'self'; worker-src 'self'; manifest-src 'self'">
+
+  <title>Seclusa Weather — Private Weather</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/icons/pwa-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/pwa-192.png">
+
+  <script src="js/theme-boot.js?v=0.7.6"></script>
+  <link rel="stylesheet" href="seclusa-base.css?v=0.7.6">
+  <link rel="stylesheet" href="css/style.css?v=0.7.6">
+  <link rel="stylesheet" href="css/responsive.css?v=0.7.6">
+</head>
+<body>
+
+  <div id="splash" class="splash" aria-hidden="true">
+    <div class="splash__inner">
+      <div class="splash__logo">
+        <img src="assets/icons/pwa-192.png" width="88" height="88" alt="" aria-hidden="true">
+      </div>
+      <h1 class="splash__title">Seclusa<span>Weather</span></h1>
+      <p class="splash__motto">Latin for &ldquo;private, set apart, secluded&rdquo;</p>
+      <div class="splash__ring" aria-hidden="true"></div>
+    </div>
+    <p class="splash__tag">No tracking. No ads. No cookies.</p>
+  </div>
+
+  <header class="header">
+    <div class="header__logo">
+      <img src="assets/icons/pwa-192.png" width="28" height="28" alt="" aria-hidden="true">
+      <div class="header__text">
+        <h1>Seclusa Weather</h1>
+        <p class="header__motto">Latin for &ldquo;private, set apart, secluded&rdquo;</p>
+      </div>
+    </div>
+    <div class="header__controls">
+    </div>
+    <span class="header__attribution">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> · <a href="https://open-meteo.com/license" target="_blank" rel="noopener noreferrer">CC BY 4.0</a></span>
+  </header>
+
+  <section class="instructions hidden" id="instructions" aria-label="How to use">
+    <button class="instructions__close" id="helpClose" aria-label="Close instructions">&times;</button>
+    <h2 class="instructions__title">How to use Seclusa Weather</h2>
+    <ol class="instructions__list">
+      <li><strong>Search or locate</strong> — type a city in the search box, or tap the crosshair button to use your current location.</li>
+      <li><strong>View the forecast</strong> — the main card shows today's conditions, sun/moon times, and an arc of daylight. Below it are the hourly, 7&nbsp;or&nbsp;14&nbsp;day forecast, and a wind compass for your area.</li>
+      <li><strong>Switch units</strong> — tap the units button (°C) in the top bar to change temperature, wind speed, and visibility units.</li>
+      <li><strong>Explore conditions</strong> — the Conditions card groups precipitation, wind, humidity, UV index, visibility, pressure, air quality, and pollen.</li>
+      <li><strong>Works offline</strong> — the last forecast is saved, so the app works without a connection. It is kept for 3 days after you last open the app.</li>
+      <li><strong>Remember</strong> — in settings, the "Remember" button is highlighted while the app saves your last place on this device. Tap it to stop saving; this also clears what is already saved.</li>
+      <li><strong>Install it</strong> — tap the install banner on Android, or on iPhone use Share &rarr; "Add to Home Screen".</li>
+    </ol>
+    <div class="instructions__actions">
+      <button class="instructions__action" id="clearDataBtn" type="button">Erase my data</button>
+      <p class="instructions__note">Deletes the saved city, coordinates, settings, and every cached forecast from this device.</p>
+    </div>
+  </section>
+
+  <main>
+    <div class="ptr-indicator" id="ptrIndicator" role="status" aria-live="polite">
+      <span class="ptr-indicator__spinner" aria-hidden="true"></span>
+      <span class="ptr-indicator__label">Pull to refresh</span>
+    </div>
+
+    <section class="search-section">
+      <div class="settings-menu" id="settingsMenu">
+        <button class="icon-btn" id="settingsBtn" aria-label="Settings" aria-expanded="false">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+        <div class="settings-menu__dropdown hidden" id="settingsDropdown">
+          <div class="settings-pills">
+            <button class="settings-pill" id="themeToggle" aria-label="Toggle theme">
+              <svg id="themeIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="M4.93 4.93l1.41 1.41"></path><path d="M17.66 17.66l1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="M6.34 17.66l-1.41 1.41"></path><path d="M19.07 4.93l-1.41 1.41"></path></svg>
+              <span id="themeLabel">Theme</span>
+            </button>
+            <button class="settings-pill" id="rememberToggle" aria-label="Remember last place" aria-pressed="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+              Remember
+            </button>
+            <button class="settings-pill" id="refreshBtn" aria-label="Refresh forecast">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
+              Refresh
+            </button>
+            <button class="settings-pill" id="locationBtnSettings" aria-label="Use my location">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+              Location
+            </button>
+            <button class="settings-pill" id="helpToggle" aria-label="How to use" aria-expanded="false">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              Help
+            </button>
+          </div>
+          <div class="units-menu" id="unitsMenu">
+            <button class="unit-toggle" id="unitMenuBtn" aria-label="Units" aria-expanded="false">
+              <span id="unitMenuLabel">°C</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="units-menu__dropdown hidden" id="unitsDropdown">
+              <div class="units-menu__row">
+                <span class="units-menu__label">Temp</span>
+                <button class="units-menu__btn" id="unitToggle" aria-pressed="false"><span id="unitLabel">°C</span></button>
+              </div>
+              <div class="units-menu__row">
+                <span class="units-menu__label">Wind</span>
+                <button class="units-menu__btn" id="windToggle" aria-pressed="false"><span id="windLabel">km/h</span></button>
+              </div>
+              <div class="units-menu__row">
+                <span class="units-menu__label">Visibility</span>
+                <button class="units-menu__btn" id="visToggle" aria-pressed="false"><span id="visLabel">km</span></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <form class="search-form" id="searchForm" role="search">
+        <label for="searchInput" class="sr-only">Search city</label>
+        <input
+          type="text"
+          id="searchInput"
+          class="search-input"
+          placeholder="Search city..."
+          maxlength="80"
+          autocomplete="off"
+          autocapitalize="words"
+          spellcheck="false"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded="false"
+          aria-controls="searchDropdown"
+          aria-label="Search city"
+        >
+        <button type="submit" class="search-btn" aria-label="Search">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.3-4.3"></path>
+          </svg>
+        </button>
+        <button type="button" class="location-btn" id="locationBtn" aria-label="Use my location">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M12 2v4"></path>
+            <path d="M12 18v4"></path>
+            <path d="M2 12h4"></path>
+            <path d="M18 12h4"></path>
+          </svg>
+        </button>
+      </form>
+      <div class="search-dropdown hidden" id="searchDropdown" role="listbox" aria-label="Search results"></div>
+    </section>
+
+    <div id="loading" class="loading hidden" aria-live="polite">
+      <div class="spinner"></div>
+      <span>Fetching weather...</span>
+    </div>
+
+    <div id="errorMessage" class="error-message hidden" role="alert"></div>
+
+    <div id="offlineNotice" class="offline-notice hidden" role="status">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+        <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+        <line x1="12" y1="20" x2="12.01" y2="20"></line>
+      </svg>
+      You're offline — showing the last saved forecast.
+    </div>
+
+    <div id="staleNotice" class="offline-notice hidden" role="status">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+      <span id="staleNoticeText">Forecast data is outdated.</span>
+    </div>
+
+    <div id="weatherContent" class="weather-content">
+
+      <p class="last-updated hidden" id="lastUpdated" aria-live="polite"></p>
+
+      <section class="current-weather" id="currentWeather" aria-label="Current weather"></section>
+
+      <section class="forecast-section">
+        <div class="section-head">
+          <h2 class="section-title">Forecast</h2>
+        </div>
+        <div class="forecast-cards" id="forecastCards" role="list"></div>
+      </section>
+
+      <section class="hourly-section">
+        <div class="section-head">
+          <h2 class="section-title">Hourly Forecast</h2>
+        </div>
+        <div class="hourly-scroll" id="hourlyScroll" role="list"></div>
+        <div class="section-head hourly-chart-head hidden" id="hourlyChartHead">
+          <h2 class="section-title" id="hourlyChartTitle">Graphs</h2>
+        </div>
+        <div class="hourly-chart hidden" id="hourlyChart" role="region" aria-roledescription="chart" aria-label="Hourly chart — swipe or use arrow keys to change metric"></div>
+      </section>
+
+      <section class="detail-section hidden" id="detailSection">
+        <div class="section-head">
+          <h2 class="section-title">Details</h2>
+        </div>
+        <div id="detailGrid" aria-label="Weather details"></div>
+      </section>
+
+      <section class="wind-section hidden" id="windSection">
+        <div class="section-head">
+          <h2 class="section-title">Wind</h2>
+        </div>
+        <div class="detail-box detail-box--compass wind-card" id="compassSection">
+          <div class="compass-container" id="compassContainer"></div>
+        </div>
+      </section>
+
+      <section class="earth-section hidden" id="earthArcSection">
+        <div class="section-head">
+          <h2 class="section-title">Sun &amp; Moon</h2>
+        </div>
+        <div class="earth-arc" id="earthArc" aria-label="Sun and moon path"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>
+      Seclusa Weather v0.7.6 &mdash; No tracking. No ads. No cookies.
+      <br>
+      Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a> &mdash; <a href="https://open-meteo.com/license" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>.
+      <br>
+      <a href="LICENSE">Open source</a> under GPL-3.0.
+    </p>
+    <p>Made with ❤️ 🇬🇧</p>
+  </footer>
+
+  <div class="install-banner hidden" id="installBanner">
+    <span>Install Weather on your device</span>
+    <button class="install-btn" id="installBtn">Install</button>
+    <button class="install-dismiss" id="installDismiss" aria-label="Dismiss">&times;</button>
+  </div>
+
+  <div class="hourly-modal hidden" id="hourlyModal" role="dialog" aria-modal="true" aria-label="Forecast details"></div>
+
+  <script src="js/config.js?v=0.7.6"></script>
+  <script src="js/store.js?v=0.7.6"></script>
+  <script src="js/theme.js?v=0.7.6"></script>
+  <script src="js/utils.js?v=0.7.6"></script>
+  <script src="js/icons.js?v=0.7.6"></script>
+  <script src="js/api.js?v=0.7.6"></script>
+  <script src="js/ui.js?v=0.7.6"></script>
+  <script src="js/ui-current.js?v=0.7.6"></script>
+  <script src="js/ui-details.js?v=0.7.6"></script>
+  <script src="js/ui-forecast.js?v=0.7.6"></script>
+  <script src="js/ui-modal.js?v=0.7.6"></script>
+  <script src="js/ui-chart.js?v=0.7.6"></script>
+  <script src="js/app.js?v=0.7.6"></script>
+</body>
+</html>

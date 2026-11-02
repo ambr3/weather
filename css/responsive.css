@@ -1,0 +1,236 @@
+@media (max-width: 768px) {
+  .header {
+    padding: 1rem 1.25rem;
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+
+  .header__logo h1 {
+    font-size: 1.15rem;
+  }
+
+  .search-section {
+    padding: 0 1rem;
+  }
+
+  .weather-content {
+    padding: 0 1rem max(2rem, calc(1.5rem + env(safe-area-inset-bottom)));
+  }
+
+  .current-weather {
+    padding: 1.2rem 1.15rem 1.1rem;
+  }
+
+  .current-weather__top {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .current-weather__icon {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+  }
+
+  .current-weather__temp {
+    font-size: 3.2rem;
+  }
+
+  .current-weather__temp-row {
+    gap: 0.6rem;
+  }
+
+  .current-weather__summary {
+    font-size: 0.74rem;
+    padding: 0.28rem 0.65rem;
+    max-width: 100%;
+  }
+
+  .hourly-chart__modes {
+    gap: 0.15rem;
+    padding: 0.18rem;
+  }
+
+  .hourly-chart__mode {
+    font-size: 0.72rem;
+    padding: 0.38rem 0.4rem;
+  }
+
+  .detail-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .detail-box--conditions {
+    grid-column: 1 / -1;
+  }
+
+  .forecast-card__row {
+    padding: 0.75rem 0.9rem;
+  }
+
+  .section-title {
+    font-size: 1.4rem;
+  }
+
+  .section-head {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "logo"
+      "controls"
+      "attr";
+    justify-items: center;
+    gap: 0.55rem 0;
+  }
+
+  .header__controls {
+    justify-self: end;
+  }
+
+  .header__attribution {
+    font-size: 0.55rem;
+    text-align: center;
+  }
+
+  .header__logo {
+    justify-content: center;
+    flex-wrap: nowrap;
+    gap: 0.55rem;
+  }
+
+  .header__logo img {
+    width: 36px;
+    height: 36px;
+  }
+
+  .header__logo h1 {
+    font-size: 1.1rem;
+  }
+
+  .current-weather {
+    padding: 1.25rem;
+  }
+
+  .current-weather__location {
+    font-size: 1.5rem;
+  }
+
+  .current-weather__temp {
+    font-size: 3rem;
+  }
+
+  .current-weather__temp-row {
+    gap: 0.5rem;
+  }
+
+  .current-weather__summary {
+    font-size: 0.72rem;
+    padding: 0.2rem 0.45rem;
+  }
+
+  .current-weather__feels {
+    font-size: 1rem;
+  }
+
+  .celestial {
+    gap: 0.25rem;
+    min-width: 0;
+  }
+
+  .current-weather__arc {
+    width: min(100%, 280px);
+  }
+
+  .earth-arc {
+    padding: 0.7rem 0.7rem 0.8rem;
+  }
+
+  .earth-arc .current-weather__arc {
+    width: min(100%, 220px);
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+  }
+
+  .detail-box--conditions {
+    grid-column: span 1;
+  }
+
+  .conditions-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .conditions-item:nth-child(3) {
+    border-top-right-radius: 0;
+  }
+
+  .conditions-item:nth-child(2) {
+    border-top-right-radius: 12px;
+  }
+
+  .conditions-item:nth-child(-n+3) {
+    border-top: none;
+  }
+
+  .conditions-item:nth-child(-n+2) {
+    border-top: 1px solid var(--color-card-border);
+  }
+
+  .conditions-item:nth-child(3n+1):not(.conditions-item--wide) {
+    border-left: none;
+  }
+
+  .conditions-item:nth-child(odd),
+  .conditions-item--wide {
+    border-left: 1px solid var(--color-card-border);
+  }
+
+  .conditions-item__value {
+    font-size: 1.4rem;
+  }
+
+  .conditions-item__sub {
+    font-size: 0.95rem;
+  }
+
+  .detail-box {
+    padding: 1.2rem 1.3rem;
+  }
+
+  .detail-box__chip {
+    font-size: 0.95rem;
+  }
+
+  .forecast-card__row {
+    padding: 0.65rem 0.75rem;
+    gap: 0.7rem;
+  }
+
+  .forecast-card__row-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .section-title {
+    font-size: 1.35rem;
+  }
+
+  .install-banner {
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+  }
+
+}
+
+@media (min-width: 1024px) {
+  .weather-content {
+    max-width: 960px;
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "name": "Seclusa Weather",
+  "short_name": "Seclusa Weather",
+  "lang": "en",
+  "version": "0.7.6",
+  "description": "No tracking. No ads. No cookies.",
+  "start_url": "./",
+  "scope": "./",
+  "id": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "orientation": "any",
+  "categories": ["weather", "utilities"],
+  "icons": [
+    {
+      "src": "assets/icons/pwa-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/pwa-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/icons/pwa-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "pictures/screenshots/weather-phone.png",
+      "sizes": "495x1063",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Current weather and forecast on a phone"
+    },
+    {
+      "src": "pictures/screenshots/weather-desktop.png",
+      "sizes": "1260x900",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Current weather and forecast on a desktop"
+    }
+  ]
+}

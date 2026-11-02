@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), gyroscope=(), magnetometer=(), accelerometer=(), payment=(), usb=(), midi=(), bluetooth=(), serial=(), interest-cohort=(), idle-detection=(), screen-wake-lock=(), picture-in-picture=(), fullscreen=(), clipboard-read=(), clipboard-write=()">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; child-src 'none'; media-src 'self'; connect-src 'none'; img-src 'self'; font-src 'self'; style-src 'self'; script-src 'self';">
+  <title>Seclusa Weather - Offline</title>
+  <link rel="stylesheet" href="seclusa-base.css?v=0.7.6">
+  <link rel="stylesheet" href="css/style.css?v=0.7.6">
+  <link rel="stylesheet" href="css/responsive.css?v=0.7.6">
+</head>
+<body>
+  <div class="offline-box">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="1" y1="1" x2="23" y2="23"></line>
+      <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+      <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+      <path d="M10.71 5.05A16 16 0 0 1 22.56 9"></path>
+      <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+      <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+      <line x1="12" y1="20" x2="12.01" y2="20"></line>
+    </svg>
+    <h2>You're Offline</h2>
+    <p>Seclusa Weather needs an internet connection to fetch weather data. Connect and try again.</p>
+    <button id="retryBtn">Retry</button>
+  </div>
+  <script src="js/offline.js?v=0.7.6"></script>
+</body>
+</html>
