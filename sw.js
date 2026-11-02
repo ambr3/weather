@@ -1,7 +1,7 @@
 const CACHE_PREFIX = 'seclusaweather-';
-const VERSION = 'v0.7.11';
+const VERSION = 'v0.7.12';
 const CACHE_NAME = CACHE_PREFIX + VERSION;
-const ASSET_VER = '0.7.11';
+const ASSET_VER = '0.7.12';
 const NETWORK_TIMEOUT_MS = 4000;
 
 function withTimeout(promise, ms) {

@@ -84,17 +84,25 @@
 
 @media (max-width: 480px) {
   .header {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
       "logo controls"
       "attr attr";
-    justify-items: start;
-    gap: 0.45rem 0.75rem;
+    justify-items: stretch;
+    align-items: center;
+    column-gap: 0.65rem;
+    row-gap: 0.4rem;
   }
 
   .header__controls {
     justify-self: end;
-    align-self: start;
+    align-self: center;
+    flex-shrink: 0;
+  }
+
+  .header__controls .icon-btn {
+    width: 38px;
+    height: 38px;
   }
 
   .header__attribution {
@@ -106,16 +114,24 @@
   .header__logo {
     justify-content: flex-start;
     flex-wrap: nowrap;
-    gap: 0.55rem;
+    gap: 0.5rem;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
   }
 
   .header__logo img {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
   }
 
   .header__logo h1 {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
+  }
+
+  /* Motto is long and was painting over the settings button. */
+  .header__motto {
+    display: none;
   }
 
   .current-weather {
