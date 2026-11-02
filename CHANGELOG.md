@@ -4,14 +4,16 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
+## 0.7.9 — 2026-11-02
+
+- Align `Permissions-Policy` metas with header samples (`browsing-topics=()`).
+- Drop HSTS `preload` from `_headers` / `.htaccess` (keep long `max-age` + `includeSubDomains`).
+- Fold phantom 0.7.7 notes into 0.7.8; smoke guards Permissions-Policy parity and no-HSTS-preload.
+
 ## 0.7.8 — 2026-11-02
 
 - README: accept Observatory **B** on GitHub Pages (missing XFO/XCTO are server-header limits, not app holes); link the scan PDF.
-- Keep hardened `_headers` / `.htaccess` for hosts that honour them; no Cloudflare chase.
-
-## 0.7.7 — 2026-11-02
-
-- HTTP header files and CSP metas hardened (`default-src 'none'`, XCTO, XFO, COOP/CORP, HSTS). GitHub Pages still cannot emit them, so live Observatory stays ~B.
+- Harden HTTP header files and CSP metas (`default-src 'none'`, XCTO, XFO, COOP/CORP, HSTS). Keep `_headers` / `.htaccess` for hosts that honour them; no Cloudflare / A+ chase. GitHub Pages still cannot emit them, so live Observatory stays ~B.
 
 ## 0.7.6 — 2026-11-02
 

@@ -1,4 +1,5 @@
-# Apache parity with _headers (Cloudflare Pages / Netlify). Required for A+ on hosts that read .htaccess.
+# Apache parity with _headers (Cloudflare Pages / Netlify). Kept for hosts that
+# honour them; GitHub Pages ignores this file and Observatory stays ~B there.
 <IfModule mod_headers.c>
   Header always set X-Frame-Options "DENY"
   Header always set X-Content-Type-Options "nosniff"
@@ -6,7 +7,7 @@
   Header always set Cross-Origin-Opener-Policy "same-origin"
   Header always set Cross-Origin-Resource-Policy "same-origin"
   Header always set X-DNS-Prefetch-Control "off"
-  Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+  Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains"
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(self), gyroscope=(), magnetometer=(), accelerometer=(), payment=(), usb=(), midi=(), bluetooth=(), serial=(), interest-cohort=(), idle-detection=(), screen-wake-lock=(), picture-in-picture=(), fullscreen=(), clipboard-read=(), clipboard-write=(), browsing-topics=()"
   Header always set Content-Security-Policy "default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; child-src 'none'; frame-ancestors 'none'; media-src 'self'; connect-src 'self' https://api.open-meteo.com https://air-quality-api.open-meteo.com https://geocoding-api.open-meteo.com; img-src 'self'; font-src 'self'; style-src 'self'; script-src 'self'; worker-src 'self'; manifest-src 'self'; upgrade-insecure-requests"
 </IfModule>

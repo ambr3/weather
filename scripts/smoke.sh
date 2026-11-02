@@ -57,11 +57,11 @@ http_hits=$(grep -RInE --include='*.html' --include='*.js' --include='*.css' --i
 pass "no mixed-content http://"
 
 # --- CSP / connect-src parity with config + SW ---
-# HTTP Observatory A+ needs real HTTP headers. Cloudflare Pages reads
-# _headers; Apache reads .htaccess. GitHub Pages serves neither — a scan of
-# *.github.io will stay around B/75 even when these files are correct.
+# Real HTTP headers help on Cloudflare Pages (_headers) and Apache (.htaccess).
+# GitHub Pages serves neither — a scan of *.github.io stays around B/75 even
+# when these files are correct; that grade is accepted (no A+ chase).
 [ -f _headers ] || bad "_headers missing (Cloudflare Pages / Netlify)"
-[ -f .htaccess ] || bad ".htaccess missing (Apache parity for A+)"
+[ -f .htaccess ] || bad ".htaccess missing (Apache parity)"
 for host in api.open-meteo.com air-quality-api.open-meteo.com geocoding-api.open-meteo.com; do
   grep -q "$host" index.html || bad "CSP meta missing $host"
   grep -q "$host" _headers || bad "_headers missing $host"
@@ -85,6 +85,9 @@ grep -q 'Cross-Origin-Opener-Policy' _headers .htaccess || bad "COOP missing fro
 grep -q 'Cross-Origin-Resource-Policy' _headers .htaccess || bad "CORP missing from headers"
 grep -q "default-src 'none'" _headers .htaccess index.html offline.html || bad "default-src 'none' missing"
 grep -q 'upgrade-insecure-requests' _headers .htaccess index.html offline.html || bad "upgrade-insecure-requests missing"
+grep -q 'browsing-topics=()' _headers .htaccess index.html offline.html || bad "browsing-topics missing from Permissions-Policy"
+grep -q 'Strict-Transport-Security' _headers .htaccess || bad "HSTS missing from headers"
+! grep -qE 'preload' _headers .htaccess || bad "HSTS must not use preload (irreversible footgun)"
 grep -q "font-src 'self'" index.html offline.html _headers .htaccess || bad "font-src 'self' missing from CSP samples"
 ! grep -q "'unsafe-inline'" index.html offline.html _headers .htaccess || bad "CSP still allows unsafe-inline"
 grep -q "dynCSS" js/utils.js || bad "dynCSS helper missing"
