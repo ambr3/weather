@@ -4,6 +4,10 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
+## 0.7.11 — 2026-11-02
+
+- Portrait header: keep settings top-right beside the app name; Open-Meteo credit stays on the row below.
+
 ## 0.7.10 — 2026-11-02
 
 - Sky-tinted grid and surfaces: day baby-blue / night black (light) or white (dark), shared across page, shell, and cards.

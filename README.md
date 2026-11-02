@@ -6,7 +6,7 @@ Type in a town and it shows you what's happening there today and hour by hour.
 
 ## Features
 
-- Version 0.7.10
+- Version 0.7.11
 - Today's weather, plus an hour-by-hour outlook
 - Search for any town by name, or let it use your location if you'd rather not
   type

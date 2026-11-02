@@ -84,26 +84,27 @@
 
 @media (max-width: 480px) {
   .header {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr auto;
     grid-template-areas:
-      "logo"
-      "controls"
-      "attr";
-    justify-items: center;
-    gap: 0.55rem 0;
+      "logo controls"
+      "attr attr";
+    justify-items: start;
+    gap: 0.45rem 0.75rem;
   }
 
   .header__controls {
     justify-self: end;
+    align-self: start;
   }
 
   .header__attribution {
     font-size: 0.55rem;
-    text-align: center;
+    text-align: left;
+    white-space: normal;
   }
 
   .header__logo {
-    justify-content: center;
+    justify-content: flex-start;
     flex-wrap: nowrap;
     gap: 0.55rem;
   }
