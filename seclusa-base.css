@@ -188,8 +188,14 @@ html {
   background-color: var(--bg);
 }
 
+/*
+ * Body stays transparent + isolated so body::before (z-index: -1) can paint
+ * the sky. An opaque body (or a ::before that slips behind html) hid the lines
+ * so only a top sliver leaked. Solid data-bg values set body colour below.
+ */
 html body {
-  background-color: var(--bg);
+  background-color: transparent;
+  isolation: isolate;
 }
 
 html body::before {

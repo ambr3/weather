@@ -4,6 +4,11 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
+## 0.7.19 — 2026-11-03
+
+- Orange lines sky fills the page again (opaque body no longer covers `body::before`); line/wash strength kept quiet now that the full page paints.
+- Startup cache no longer overwrites unit prefs with stale kmh/km from an old snapshot.
+
 ## 0.7.18 — 2026-11-03
 
 - Sky colour picks apply to Day and Night until you set them apart (factory night-black no longer hides a Day colour after sunset).

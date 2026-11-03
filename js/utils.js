@@ -102,7 +102,7 @@ const Utils = {
 
   getWindUnit(code) {
     const map = { kmh: 'km/h', mph: 'mph', kn: 'kn', ms: 'm/s' };
-    return map[code] || 'km/h';
+    return map[code] || map[CONFIG.DEFAULT_WIND_UNIT] || 'mph';
   },
 
   formatVisibility(metres, unit) {

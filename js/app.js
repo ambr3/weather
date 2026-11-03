@@ -317,16 +317,18 @@ const App = {
       }
       if (name) this.lastCity = name;
       if (country) this.lastCountry = country;
-      this.units = cached.units || this.units;
-      Utils.safeSet('units', this.units);
-      UI.setUnitLabel(this.units);
-      if (cached.windUnit) {
-        this.windUnit = cached.windUnit;
-        Utils.safeSet('windUnit', cached.windUnit);
-        UI.setWindUnitLabel(cached.windUnit);
+      /* Keep prefs (°C/mph/mi defaults). Rescale cache — do not adopt stale cache units. */
+      let weather = cached.weather;
+      const cacheUnits = cached.units || this.units;
+      const cacheWind = cached.windUnit || this.windUnit;
+      if (cacheUnits !== this.units || cacheWind !== this.windUnit) {
+        weather = Utils.convertWeatherUnits(weather, cacheUnits, this.units, cacheWind, this.windUnit);
       }
-      UI.renderWeather(cached.weather, cached.aq || null, this.units, name, country, lat, lon);
-      this._last = { weather: cached.weather, aq: cached.aq || null, units: this.units, name, country, lat, lon };
+      UI.setUnitLabel(this.units);
+      UI.setWindUnitLabel(this.windUnit);
+      UI.setVisLabel(this.visUnit);
+      UI.renderWeather(weather, cached.aq || null, this.units, name, country, lat, lon);
+      this._last = { weather, aq: cached.aq || null, units: this.units, name, country, lat, lon };
       UI.setUpdatedAt(cached.savedAt);
       UI.markOffline(!navigator.onLine);
     }

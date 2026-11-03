@@ -920,13 +920,14 @@ html {
 }
 
 html[data-theme="light"] {
-  --grid-line: rgba(196, 94, 18, 0.2);
-  --grid-wash: rgba(196, 94, 18, 0.22);
+  --grid-line: rgba(196, 94, 18, 0.16);
+  --grid-wash: rgba(196, 94, 18, 0.14);
 }
 
 html[data-theme="dark"] {
-  --grid-line: rgba(232, 140, 70, 0.22);
-  --grid-wash: rgba(196, 94, 18, 0.3);
+  /* Quieter than pre-fix values — full-page paint made 0.22/0.3 look loud again. */
+  --grid-line: rgba(232, 140, 70, 0.16);
+  --grid-wash: rgba(196, 94, 18, 0.14);
 }
 
 /* Solid colour fills (no lines). */
@@ -1027,6 +1028,17 @@ html[data-bg="custom"][data-bg-tone="dark"] {
   --color-accent: #ffffff;
   --color-accent-2: #ffffff;
   --color-accent-text: #0a0a0a;
+}
+
+/*
+ * Sky paint lives on body::before (z-index: -1). Body itself must stay
+ * transparent + isolated, or the lines hide behind html/body fills
+ * (only a thin top strip used to leak through).
+ */
+html[data-bg="grid"] body,
+html:not([data-bg]) body {
+  background-color: transparent;
+  isolation: isolate;
 }
 
 /* One fixed layer, paint only. */
