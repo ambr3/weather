@@ -4,6 +4,11 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
+## 0.7.18 — 2026-11-03
+
+- Sky colour picks apply to Day and Night until you set them apart (factory night-black no longer hides a Day colour after sunset).
+- Theme menu opens on the live Day/Night sky slot so the swatch you tap is the one on screen.
+
 ## 0.7.17 — 2026-11-03
 
 - Live clock keeps night mode when sun times are missing (falls back to API `is_day` instead of forcing day).

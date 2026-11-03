@@ -153,11 +153,13 @@
     var backgroundDay = stored.backgroundDay != null
       ? normalizeBackground(stored.backgroundDay)
       : legacyBg;
+    /* Night follows day until the user edits Night (avoids factory black hiding Day picks). */
     var backgroundNight = stored.backgroundNight != null
       ? normalizeBackground(stored.backgroundNight)
-      : (stored.background != null ? legacyBg : "black");
+      : (stored.background != null ? legacyBg : backgroundDay);
     var bgCustomDay = normalizeHex(stored.bgCustomDay) || legacyCustom;
     var bgCustomNight = normalizeHex(stored.bgCustomNight) || legacyCustom;
+    var bgNightTouched = stored.bgNightTouched === true;
 
     return {
       theme: stored.theme === "light" || stored.theme === "dark" ? stored.theme : "system",
@@ -167,6 +169,7 @@
       bgCustom: bgCustomDay,
       bgCustomDay: bgCustomDay,
       bgCustomNight: bgCustomNight,
+      bgNightTouched: bgNightTouched,
       /* Last live sun period — theme-boot uses this so night skies paint before weather. */
       skyPeriod: stored.skyPeriod === "night" ? "night" : "day",
       units: units,
@@ -280,13 +283,27 @@
     return value;
   }
 
+  /** True when Day/Night still share one colour (or factory grid+black split). */
+  function backgroundsLinked(day, night, nightTouched) {
+    if (day === night) return true;
+    if (nightTouched) return false;
+    return day === "grid" && night === "black";
+  }
+
   function setBackground(background, period) {
     var value = normalizeBackground(background);
+    var s = getSettings();
+    var linked = backgroundsLinked(s.backgroundDay, s.backgroundNight, s.bgNightTouched);
+    var patch = { background: value };
     if (period === "night") {
-      setSettings({ backgroundNight: value, background: value });
+      patch.backgroundNight = value;
+      patch.bgNightTouched = true;
+      if (linked) patch.backgroundDay = value;
     } else {
-      setSettings({ backgroundDay: value, background: value });
+      patch.backgroundDay = value;
+      if (linked) patch.backgroundNight = value;
     }
+    setSettings(patch);
     return value;
   }
 
@@ -297,11 +314,26 @@
 
   function setBgCustom(hex, period) {
     var value = normalizeHex(hex) || "#5faff0";
+    var s = getSettings();
+    var linked = backgroundsLinked(s.backgroundDay, s.backgroundNight, s.bgNightTouched);
+    var patch = { background: "custom", bgCustom: value };
     if (period === "night") {
-      setSettings({ bgCustomNight: value, backgroundNight: "custom", background: "custom" });
+      patch.bgCustomNight = value;
+      patch.backgroundNight = "custom";
+      patch.bgNightTouched = true;
+      if (linked) {
+        patch.bgCustomDay = value;
+        patch.backgroundDay = "custom";
+      }
     } else {
-      setSettings({ bgCustomDay: value, bgCustom: value, backgroundDay: "custom", background: "custom" });
+      patch.bgCustomDay = value;
+      patch.backgroundDay = "custom";
+      if (linked) {
+        patch.bgCustomNight = value;
+        patch.backgroundNight = "custom";
+      }
     }
+    setSettings(patch);
     return value;
   }
 
@@ -312,7 +344,12 @@
     var dayRaw = stored.backgroundDay != null ? stored.backgroundDay : stored.background;
     var nightRaw = stored.backgroundNight != null ? stored.backgroundNight : stored.background;
     var day = normalizeBackground(dayRaw);
-    var night = normalizeBackground(nightRaw != null ? nightRaw : "black");
+    var night = normalizeBackground(nightRaw != null ? nightRaw : day);
+    var nightTouched = stored.bgNightTouched === true;
+    /* Older builds persisted factory night=black against day=grid / a Day pick. */
+    if (!nightTouched && night === "black" && day !== "black") {
+      night = day;
+    }
     if (
       stored.backgroundDay !== day
       || stored.backgroundNight !== night

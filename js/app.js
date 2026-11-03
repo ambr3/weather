@@ -808,7 +808,11 @@ const App = {
     const dd = this.$('themeDropdown');
     const opening = dd && dd.classList.contains('hidden');
     this._toggleMenu('themeDropdown', 'themeMenuBtn');
-    if (opening && window.UI) UI._previewEditBackground();
+    if (opening && window.UI) {
+      /* Edit the sky period that is live now, so picks match what you see. */
+      const sky = document.documentElement.getAttribute('data-sky') === 'night' ? 'night' : 'day';
+      UI.setBgEditPeriod(sky);
+    }
     if (!opening && window.UI) UI._paintActiveBackground();
   },
   closeThemeMenu() {
