@@ -227,9 +227,12 @@
     grid: 1,
     blue: 1,
     lightblue: 1,
+    teal: 1,
     green: 1,
-    red: 1,
     yellow: 1,
+    orange: 1,
+    red: 1,
+    purple: 1,
     black: 1,
     white: 1,
     custom: 1
@@ -241,10 +244,10 @@
     ocean: "blue",
     slate: "black",
     forest: "green",
-    sunset: "red",
-    violet: "blue",
+    sunset: "orange",
+    violet: "purple",
     rose: "red",
-    amber: "yellow",
+    amber: "orange",
     plain: "white"
   };
 

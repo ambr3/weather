@@ -27,12 +27,12 @@
   var KEY_THEME = "ssc.pref_key_night_mode";
   var KEY_SETTINGS = "seclusa.settings";
   var BG = {
-    grid: 1, blue: 1, lightblue: 1, green: 1, red: 1,
-    yellow: 1, black: 1, white: 1, custom: 1
+    grid: 1, blue: 1, lightblue: 1, teal: 1, green: 1, yellow: 1,
+    orange: 1, red: 1, purple: 1, black: 1, white: 1, custom: 1
   };
   var BG_LEGACY = {
     sky: "lightblue", ocean: "blue", slate: "black", forest: "green",
-    sunset: "red", violet: "blue", rose: "red", amber: "yellow", plain: "white"
+    sunset: "orange", violet: "purple", rose: "red", amber: "orange", plain: "white"
   };
 
   /** Read the saved preference. Anything unrecognised means "follow the system". */

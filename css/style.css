@@ -483,7 +483,7 @@ body {
 
 .toolbar__swatches {
   display: grid;
-  grid-template-columns: repeat(5, 1.7rem);
+  grid-template-columns: repeat(6, 1.7rem);
   gap: 0.4rem;
   padding: 0.15rem 0.1rem 0.25rem;
 }
@@ -508,9 +508,12 @@ body {
 }
 .toolbar__swatch[data-bg-opt="blue"] { --swatch: #3b82f6; }
 .toolbar__swatch[data-bg-opt="lightblue"] { --swatch: #7dd3fc; }
+.toolbar__swatch[data-bg-opt="teal"] { --swatch: #14b8a6; }
 .toolbar__swatch[data-bg-opt="green"] { --swatch: #22c55e; }
-.toolbar__swatch[data-bg-opt="red"] { --swatch: #ef4444; }
 .toolbar__swatch[data-bg-opt="yellow"] { --swatch: #facc15; }
+.toolbar__swatch[data-bg-opt="orange"] { --swatch: #f97316; }
+.toolbar__swatch[data-bg-opt="red"] { --swatch: #ef4444; }
+.toolbar__swatch[data-bg-opt="purple"] { --swatch: #a855f7; }
 .toolbar__swatch[data-bg-opt="black"] { --swatch: #0a0a0a; }
 .toolbar__swatch[data-bg-opt="white"] { --swatch: #ffffff; }
 
@@ -933,18 +936,24 @@ html[data-theme="dark"] {
 /* Solid colour fills (no lines). */
 html[data-bg="blue"] { --bg-solid: #3b82f6; }
 html[data-bg="lightblue"] { --bg-solid: #7dd3fc; }
+html[data-bg="teal"] { --bg-solid: #14b8a6; }
 html[data-bg="green"] { --bg-solid: #22c55e; }
-html[data-bg="red"] { --bg-solid: #ef4444; }
 html[data-bg="yellow"] { --bg-solid: #facc15; }
+html[data-bg="orange"] { --bg-solid: #f97316; }
+html[data-bg="red"] { --bg-solid: #ef4444; }
+html[data-bg="purple"] { --bg-solid: #a855f7; }
 html[data-bg="black"] { --bg-solid: #0a0a0a; }
 html[data-bg="white"] { --bg-solid: #ffffff; }
 html[data-bg="custom"] { --bg-solid: var(--bg-custom, #5faff0); }
 
 html[data-bg="blue"],
 html[data-bg="lightblue"],
+html[data-bg="teal"],
 html[data-bg="green"],
-html[data-bg="red"],
 html[data-bg="yellow"],
+html[data-bg="orange"],
+html[data-bg="red"],
+html[data-bg="purple"],
 html[data-bg="black"],
 html[data-bg="white"],
 html[data-bg="custom"] {
@@ -954,9 +963,12 @@ html[data-bg="custom"] {
 
 html[data-bg="blue"] body,
 html[data-bg="lightblue"] body,
+html[data-bg="teal"] body,
 html[data-bg="green"] body,
-html[data-bg="red"] body,
 html[data-bg="yellow"] body,
+html[data-bg="orange"] body,
+html[data-bg="red"] body,
+html[data-bg="purple"] body,
 html[data-bg="black"] body,
 html[data-bg="white"] body,
 html[data-bg="custom"] body {
@@ -972,8 +984,11 @@ html[data-bg="white"],
 html[data-bg="yellow"],
 html[data-bg="lightblue"],
 html[data-bg="blue"],
+html[data-bg="teal"],
 html[data-bg="green"],
+html[data-bg="orange"],
 html[data-bg="red"],
+html[data-bg="purple"],
 html[data-bg-tone="light"] {
   --shell-bg: color-mix(in srgb, #ffffff 90%, var(--bg-solid));
   --color-card: color-mix(in srgb, #ffffff 92%, var(--bg-solid));

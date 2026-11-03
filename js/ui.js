@@ -454,8 +454,8 @@ const UI = {
   },
 
   _BG_OPTS: {
-    grid: 1, blue: 1, lightblue: 1, green: 1, red: 1,
-    yellow: 1, black: 1, white: 1, custom: 1
+    grid: 1, blue: 1, lightblue: 1, teal: 1, green: 1, yellow: 1,
+    orange: 1, red: 1, purple: 1, black: 1, white: 1, custom: 1
   },
 
   _skyPeriod() {
@@ -466,7 +466,7 @@ const UI = {
     if (this._BG_OPTS[mode]) return mode;
     const legacy = {
       sky: 'lightblue', ocean: 'blue', slate: 'black', forest: 'green',
-      sunset: 'red', violet: 'blue', rose: 'red', amber: 'yellow', plain: 'white'
+      sunset: 'orange', violet: 'purple', rose: 'red', amber: 'orange', plain: 'white'
     };
     return legacy[mode] || 'grid';
   },
@@ -523,7 +523,8 @@ const UI = {
     if (value === 'grid') return null;
     if (value === 'black') return 'dark';
     if (value === 'white' || value === 'yellow' || value === 'lightblue'
-      || value === 'blue' || value === 'green' || value === 'red') {
+      || value === 'blue' || value === 'teal' || value === 'green'
+      || value === 'orange' || value === 'red' || value === 'purple') {
       return 'light';
     }
     /* custom: dark cards only on near-black; otherwise light frosted cards. */
@@ -543,8 +544,9 @@ const UI = {
       window.Utils.dynCSS.set('bg-custom', `html { --bg-custom: ${colour}; }`);
       if (value !== 'grid' && value !== 'custom') {
         const solids = {
-          blue: '#3b82f6', lightblue: '#7dd3fc', green: '#22c55e', red: '#ef4444',
-          yellow: '#facc15', black: '#0a0a0a', white: '#ffffff'
+          blue: '#3b82f6', lightblue: '#7dd3fc', teal: '#14b8a6', green: '#22c55e',
+          yellow: '#facc15', orange: '#f97316', red: '#ef4444', purple: '#a855f7',
+          black: '#0a0a0a', white: '#ffffff'
         };
         const solid = solids[value] || colour;
         window.Utils.dynCSS.set(

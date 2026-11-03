@@ -4,6 +4,10 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
+## 0.7.21 — 2026-11-03
+
+- Theme sky palette: teal, orange, and purple swatches (2×6 grid with lines / black / white / custom).
+
 ## 0.7.20 — 2026-11-03
 
 - Theme menu stays on-screen in mobile portrait (no longer clipped off the left edge).
