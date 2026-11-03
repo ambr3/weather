@@ -25,6 +25,15 @@
 
 (function () {
   var KEY_THEME = "ssc.pref_key_night_mode";
+  var KEY_SETTINGS = "seclusa.settings";
+  var BG = {
+    grid: 1, blue: 1, lightblue: 1, green: 1, red: 1,
+    yellow: 1, black: 1, white: 1, custom: 1
+  };
+  var BG_LEGACY = {
+    sky: "lightblue", ocean: "blue", slate: "black", forest: "green",
+    sunset: "red", violet: "blue", rose: "red", amber: "yellow", plain: "white"
+  };
 
   /** Read the saved preference. Anything unrecognised means "follow the system". */
   function readPref() {
@@ -39,6 +48,35 @@
     }
   }
 
+  function readHex(v) {
+    return typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v) ? v.toLowerCase() : null;
+  }
+
+  function readSettingsBg() {
+    try {
+      var raw = localStorage.getItem(KEY_SETTINGS);
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return null;
+      /* Last live sun period so night slot paints before weather reloads. */
+      var sky = parsed.skyPeriod === "night" ? "night" : "day";
+      var rawBg = sky === "night"
+        ? (parsed.backgroundNight || parsed.background)
+        : (parsed.backgroundDay || parsed.background);
+      var bg = BG[rawBg] ? rawBg : (BG_LEGACY[rawBg] || null);
+      var custom = sky === "night"
+        ? (readHex(parsed.bgCustomNight) || readHex(parsed.bgCustomDay) || readHex(parsed.bgCustom))
+        : (readHex(parsed.bgCustomDay) || readHex(parsed.bgCustom));
+      return {
+        sky: sky,
+        bg: bg,
+        custom: custom
+      };
+    } catch (err) {
+      return null;
+    }
+  }
+
   try {
     var html = document.documentElement;
     var saved = readPref();
@@ -47,6 +85,44 @@
       html.setAttribute("data-theme", saved);
     } else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
       html.setAttribute("data-theme", "dark");
+    }
+
+    var bgInfo = readSettingsBg();
+    html.setAttribute("data-sky", bgInfo && bgInfo.sky === "night" ? "night" : "day");
+
+    /*
+     * Custom colour via adopted stylesheet — not element.style.
+     * Older boots set inline --bg-custom, which beat live dynCSS and trapped picks on blue.
+     * Drop any leftover style attribute, then paint through a sheet ui.js can override.
+     */
+    try { html.removeAttribute("style"); } catch (err) { /* ignore */ }
+    if (bgInfo && bgInfo.custom) {
+      try {
+        var sheet = new CSSStyleSheet();
+        sheet.insertRule("html { --bg-custom: " + bgInfo.custom + "; }", 0);
+        document.adoptedStyleSheets = [].concat(document.adoptedStyleSheets, sheet);
+      } catch (err) {
+        /* adoptedStyleSheets unavailable — first paint uses CSS fallback #5faff0. */
+      }
+    }
+    if (bgInfo && bgInfo.bg) {
+      html.setAttribute("data-bg", bgInfo.bg);
+      /* Match ui.js: light frosted cards on colour/light pages; dark cards on near-black. */
+      var tone = "light";
+      if (bgInfo.bg === "black") {
+        tone = "dark";
+      } else if (bgInfo.bg === "custom" && bgInfo.custom) {
+        var n = parseInt(bgInfo.custom.slice(1), 16);
+        var r = ((n >> 16) & 255) / 255;
+        var g = ((n >> 8) & 255) / 255;
+        var b = (n & 255) / 255;
+        var luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        tone = luma < 0.18 ? "dark" : "light";
+      } else if (bgInfo.bg === "grid") {
+        tone = null;
+      }
+      if (tone) html.setAttribute("data-bg-tone", tone);
+      else html.removeAttribute("data-bg-tone");
     }
   } catch (err) {
     /* Storage blocked, or no matchMedia. The light default in the markup stands. */

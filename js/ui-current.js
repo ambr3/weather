@@ -34,7 +34,17 @@ Object.assign(UI, {
     const SUN_R = 42;
     const MOON_R = 36;
     const sunOrb = this._orbitFor(d.sunrise && d.sunrise[0], d.sunset && d.sunset[0], this._tz, SUN_R);
-    const moonOrb = this._orbitFor(d.moonrise && d.moonrise[0], d.moonset && d.moonset[0], this._tz, MOON_R);
+    let moonRiseIso = d.moonrise && d.moonrise[0] ? d.moonrise[0] : null;
+    let moonSetIso = d.moonset && d.moonset[0] ? d.moonset[0] : null;
+    let nextMoonRiseIso = d.moonrise && d.moonrise[1] ? d.moonrise[1] : null;
+    let moonOrb = this._orbitFor(moonRiseIso, moonSetIso, this._tz, MOON_R, nextMoonRiseIso);
+    // Open-Meteo sometimes omits both of today's limbs; fall back to tomorrow's rise.
+    if (!moonOrb && nextMoonRiseIso) {
+      moonRiseIso = nextMoonRiseIso;
+      moonSetIso = null;
+      nextMoonRiseIso = null;
+      moonOrb = this._orbitFor(moonRiseIso, moonSetIso, this._tz, MOON_R, nextMoonRiseIso);
+    }
     // Night mode follows the sun horizon, not the stale API is_day snapshot.
     const sunUp = sunOrb ? !sunOrb.below : null;
     const isDay = sunUp == null ? (c.is_day === 0 ? 0 : 1) : (sunUp ? 1 : 0);
@@ -43,8 +53,9 @@ Object.assign(UI, {
       tz: this._tz,
       sunrise: d.sunrise && d.sunrise[0],
       sunset: d.sunset && d.sunset[0],
-      moonrise: d.moonrise && d.moonrise[0],
-      moonset: d.moonset && d.moonset[0],
+      moonrise: moonRiseIso,
+      moonset: moonSetIso,
+      nextMoonrise: nextMoonRiseIso,
       sunR: SUN_R,
       moonR: MOON_R,
       weatherCode: iconCode,

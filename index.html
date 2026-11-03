@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light" data-sky="day">
+<html lang="en" data-theme="light" data-sky="day" data-bg="grid">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -21,10 +21,10 @@
   <link rel="apple-touch-icon" href="assets/icons/pwa-192.png">
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/pwa-192.png">
 
-  <script src="js/theme-boot.js?v=0.7.12"></script>
-  <link rel="stylesheet" href="seclusa-base.css?v=0.7.12">
-  <link rel="stylesheet" href="css/style.css?v=0.7.12">
-  <link rel="stylesheet" href="css/responsive.css?v=0.7.12">
+  <script src="js/theme-boot.js?v=0.7.17"></script>
+  <link rel="stylesheet" href="seclusa-base.css?v=0.7.17">
+  <link rel="stylesheet" href="css/style.css?v=0.7.17">
+  <link rel="stylesheet" href="css/responsive.css?v=0.7.17">
 </head>
 <body>
 
@@ -48,62 +48,72 @@
         <p class="header__motto">Latin for &ldquo;private, set apart, secluded&rdquo;</p>
       </div>
     </div>
-    <div class="header__controls">
-      <div class="settings-menu" id="settingsMenu">
-        <button class="icon-btn" id="settingsBtn" aria-label="Settings" aria-expanded="false">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-          </svg>
+    <span class="header__attribution">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> · <a href="https://open-meteo.com/license" target="_blank" rel="noopener noreferrer">CC BY 4.0</a></span>
+  </header>
+
+  <nav class="toolbar" id="toolbar" aria-label="App controls">
+    <div class="toolbar__scroll">
+      <div class="toolbar__menu" id="themeMenu">
+        <button class="toolbar__tab toolbar__tab--menu" id="themeMenuBtn" type="button" aria-label="Theme" aria-expanded="false" aria-haspopup="true">
+          <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="M4.93 4.93l1.41 1.41"></path><path d="M17.66 17.66l1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="M6.34 17.66l-1.41 1.41"></path><path d="M19.07 4.93l-1.41 1.41"></path></svg>
+          <span id="themeLabel">Theme</span>
+          <svg class="toolbar__caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
         </button>
-        <div class="settings-menu__dropdown hidden" id="settingsDropdown">
-          <div class="settings-pills">
-            <button class="settings-pill" id="themeToggle" aria-label="Toggle theme">
-              <svg id="themeIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="M4.93 4.93l1.41 1.41"></path><path d="M17.66 17.66l1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="M6.34 17.66l-1.41 1.41"></path><path d="M19.07 4.93l-1.41 1.41"></path></svg>
-              <span id="themeLabel">Theme</span>
-            </button>
-            <button class="settings-pill" id="rememberToggle" aria-label="Remember last place" aria-pressed="true">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-              Remember
-            </button>
-            <button class="settings-pill" id="refreshBtn" aria-label="Refresh forecast">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
-              Refresh
-            </button>
-            <button class="settings-pill" id="locationBtnSettings" aria-label="Use my location">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-              Location
-            </button>
-            <button class="settings-pill" id="helpToggle" aria-label="How to use" aria-expanded="false">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-              Help
-            </button>
+        <div class="toolbar__dropdown toolbar__dropdown--theme hidden" id="themeDropdown" role="menu">
+          <p class="toolbar__section-label">Mode</p>
+          <div class="toolbar__mode-row" role="group" aria-label="Colour mode">
+            <button class="toolbar__option toolbar__option--chip" type="button" role="menuitemradio" data-theme-opt="system" aria-checked="false">System</button>
+            <button class="toolbar__option toolbar__option--chip" type="button" role="menuitemradio" data-theme-opt="light" aria-checked="false">Light</button>
+            <button class="toolbar__option toolbar__option--chip" type="button" role="menuitemradio" data-theme-opt="dark" aria-checked="false">Dark</button>
           </div>
-          <div class="units-menu" id="unitsMenu">
-            <button class="unit-toggle" id="unitMenuBtn" aria-label="Units" aria-expanded="false">
-              <span id="unitMenuLabel">°C</span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-            </button>
-            <div class="units-menu__dropdown hidden" id="unitsDropdown">
-              <div class="units-menu__row">
-                <span class="units-menu__label">Temp</span>
-                <button class="units-menu__btn" id="unitToggle" aria-pressed="false"><span id="unitLabel">°C</span></button>
-              </div>
-              <div class="units-menu__row">
-                <span class="units-menu__label">Wind</span>
-                <button class="units-menu__btn" id="windToggle" aria-pressed="false"><span id="windLabel">mph</span></button>
-              </div>
-              <div class="units-menu__row">
-                <span class="units-menu__label">Visibility</span>
-                <button class="units-menu__btn" id="visToggle" aria-pressed="false"><span id="visLabel">mi</span></button>
-              </div>
-            </div>
+          <p class="toolbar__section-label">Sky background</p>
+          <div class="toolbar__mode-row" role="group" aria-label="Edit day or night background">
+            <button class="toolbar__option toolbar__option--chip" type="button" id="bgPeriodDay" data-bg-period="day" aria-pressed="true">Day</button>
+            <button class="toolbar__option toolbar__option--chip" type="button" id="bgPeriodNight" data-bg-period="night" aria-pressed="false">Night</button>
+          </div>
+          <p class="toolbar__hint" id="bgPeriodHint">Day colour — switches at sunrise/sunset (not Light/Dark)</p>
+          <div class="toolbar__swatches" role="group" aria-label="Background style">
+            <button class="toolbar__swatch" type="button" role="menuitemradio" data-bg-opt="grid" aria-label="Lines" aria-checked="false" title="Orange lines"></button>
+            <button class="toolbar__swatch" type="button" role="menuitemradio" data-bg-opt="blue" aria-label="Blue" aria-checked="false"></button>
+            <button class="toolbar__swatch" type="button" role="menuitemradio" data-bg-opt="lightblue" aria-label="Light blue" aria-checked="false"></button>
+            <button class="toolbar__swatch" type="button" role="menuitemradio" data-bg-opt="green" aria-label="Green" aria-checked="false"></button>
+            <button class="toolbar__swatch" type="button" role="menuitemradio" data-bg-opt="red" aria-label="Red" aria-checked="false"></button>
+            <button class="toolbar__swatch" type="button" role="menuitemradio" data-bg-opt="yellow" aria-label="Yellow" aria-checked="false"></button>
+            <button class="toolbar__swatch" type="button" role="menuitemradio" data-bg-opt="black" aria-label="Black" aria-checked="false"></button>
+            <button class="toolbar__swatch" type="button" role="menuitemradio" data-bg-opt="white" aria-label="White" aria-checked="false"></button>
+            <label class="toolbar__swatch toolbar__swatch--custom" id="bgCustomSwatch" data-bg-opt="custom" title="Custom colour" aria-label="Custom colour" aria-checked="false">
+              <input type="color" id="bgCustomPicker" value="#5faff0" aria-label="Pick a custom background colour">
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <button class="toolbar__tab toolbar__tab--icon" id="helpToggle" type="button" aria-label="How to use" aria-expanded="false" title="Help">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+      </button>
+
+      <div class="units-menu toolbar__menu" id="unitsMenu">
+        <button class="toolbar__tab toolbar__tab--menu unit-toggle" id="unitMenuBtn" type="button" aria-label="Units" aria-expanded="false">
+          <span id="unitMenuLabel">°C</span>
+          <svg class="toolbar__caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="toolbar__dropdown units-menu__dropdown hidden" id="unitsDropdown">
+          <div class="units-menu__row">
+            <span class="units-menu__label">Temp</span>
+            <button class="units-menu__btn" id="unitToggle" type="button" aria-pressed="false"><span id="unitLabel">°C</span></button>
+          </div>
+          <div class="units-menu__row">
+            <span class="units-menu__label">Wind</span>
+            <button class="units-menu__btn" id="windToggle" type="button" aria-pressed="false"><span id="windLabel">mph</span></button>
+          </div>
+          <div class="units-menu__row">
+            <span class="units-menu__label">Visibility</span>
+            <button class="units-menu__btn" id="visToggle" type="button" aria-pressed="false"><span id="visLabel">mi</span></button>
           </div>
         </div>
       </div>
     </div>
-    <span class="header__attribution">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> · <a href="https://open-meteo.com/license" target="_blank" rel="noopener noreferrer">CC BY 4.0</a></span>
-  </header>
+  </nav>
 
   <section class="instructions hidden" id="instructions" aria-label="How to use">
     <button class="instructions__close" id="helpClose" aria-label="Close instructions">&times;</button>
@@ -111,11 +121,12 @@
     <ol class="instructions__list">
       <li><strong>Search or locate</strong> — type a city in the search box, or tap the crosshair button to use your current location.</li>
       <li><strong>View the forecast</strong> — the main card shows today's conditions, sun/moon times, and an arc of daylight. Below it are the hourly, 7&nbsp;or&nbsp;14&nbsp;day forecast, and a wind compass for your area.</li>
-      <li><strong>Switch units</strong> — tap the units button (°C) in the top bar to change temperature, wind speed, and visibility units.</li>
-      <li><strong>Explore conditions</strong> — the Conditions card groups precipitation, wind, humidity, UV index, visibility, pressure, air quality, and pollen.</li>
-      <li><strong>Works offline</strong> — the last forecast is saved, so the app works without a connection. It is kept for 3 days after you last open the app.</li>
-      <li><strong>Remember</strong> — in settings, the "Remember" button is highlighted while the app saves your last place on this device. Tap it to stop saving; this also clears what is already saved.</li>
-      <li><strong>Install it</strong> — tap the install banner on Android, or on iPhone use Share &rarr; "Add to Home Screen".</li>
+      <li><strong>Theme</strong> — tap Theme for Light/Dark/System. Under Sky background, set separate Day and Night options (orange lines, blue, light blue, green, red, yellow, black, white, or custom). These follow sunrise/sunset at your place — not the Light/Dark setting.</li>
+      <li><strong>Units</strong> — tap °C in the toolbar to change temperature, wind speed, and visibility units.</li>
+      <li><strong>Conditions</strong> — precipitation, wind, humidity, UV, visibility, pressure, air quality, and pollen are grouped on the Conditions card.</li>
+      <li><strong>Saved on this device</strong> — the last place and forecast stay on your device for 3&nbsp;days after you last used them, then clear themselves. No account. Use Erase my data below to clear sooner.</li>
+      <li><strong>Offline</strong> — with a saved forecast you can still open the app without a connection.</li>
+      <li><strong>Install</strong> — tap the install banner on Android, or on iPhone use Share &rarr; "Add to Home Screen".</li>
     </ol>
     <div class="instructions__actions">
       <button class="instructions__action" id="clearDataBtn" type="button">Erase my data</button>
@@ -243,11 +254,11 @@
 
   <footer class="footer">
     <p>
-      Seclusa Weather v0.7.12 &mdash; No tracking. No ads. No cookies.
+      Seclusa Weather v0.7.17 &mdash; No tracking. No ads. No cookies.
       <br>
       Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a> &mdash; <a href="https://open-meteo.com/license" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>.
       <br>
-      <a href="LICENSE">Open source</a> under GPL-3.0.
+      <a href="https://github.com/ambr3/weather" target="_blank" rel="noopener noreferrer">Open source</a> under GPL-3.0.
     </p>
     <p>Made with ❤️ 🇬🇧</p>
   </footer>
@@ -260,18 +271,18 @@
 
   <div class="hourly-modal hidden" id="hourlyModal" role="dialog" aria-modal="true" aria-label="Forecast details"></div>
 
-  <script src="js/config.js?v=0.7.12"></script>
-  <script src="js/store.js?v=0.7.12"></script>
-  <script src="js/theme.js?v=0.7.12"></script>
-  <script src="js/utils.js?v=0.7.12"></script>
-  <script src="js/icons.js?v=0.7.12"></script>
-  <script src="js/api.js?v=0.7.12"></script>
-  <script src="js/ui.js?v=0.7.12"></script>
-  <script src="js/ui-current.js?v=0.7.12"></script>
-  <script src="js/ui-details.js?v=0.7.12"></script>
-  <script src="js/ui-forecast.js?v=0.7.12"></script>
-  <script src="js/ui-modal.js?v=0.7.12"></script>
-  <script src="js/ui-chart.js?v=0.7.12"></script>
-  <script src="js/app.js?v=0.7.12"></script>
+  <script src="js/config.js?v=0.7.17"></script>
+  <script src="js/store.js?v=0.7.17"></script>
+  <script src="js/theme.js?v=0.7.17"></script>
+  <script src="js/utils.js?v=0.7.17"></script>
+  <script src="js/icons.js?v=0.7.17"></script>
+  <script src="js/api.js?v=0.7.17"></script>
+  <script src="js/ui.js?v=0.7.17"></script>
+  <script src="js/ui-current.js?v=0.7.17"></script>
+  <script src="js/ui-details.js?v=0.7.17"></script>
+  <script src="js/ui-forecast.js?v=0.7.17"></script>
+  <script src="js/ui-modal.js?v=0.7.17"></script>
+  <script src="js/ui-chart.js?v=0.7.17"></script>
+  <script src="js/app.js?v=0.7.17"></script>
 </body>
 </html>

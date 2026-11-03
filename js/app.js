@@ -80,13 +80,8 @@ const App = {
       }
     } catch (e) { /* cross-origin frame — leave blank */ }
 
-    if (!Utils.rememberPlace()) {
+    if ((Number.isFinite(this.lastLat) || Number.isFinite(this.lastLon)) && this._placeExpired()) {
       this._clearSavedPlace();
-    } else if ((Number.isFinite(this.lastLat) || Number.isFinite(this.lastLon)) && this._placeExpired()) {
-      this._clearSavedPlace();
-    }
-    if (Number.isFinite(this.lastLat) && Number.isFinite(this.lastLon)) {
-      Utils.safeSet('lastPlaceAt', Date.now());
     }
 
     UI.setUnitLabel(this.units);
@@ -126,8 +121,9 @@ const App = {
       if (!e.target.closest('.search-form') && !e.target.closest('.search-dropdown')) {
         this.hideDropdown();
       }
-      if (!e.target.closest('.units-menu')) this.closeUnitsMenu();
-      if (!e.target.closest('.settings-menu')) this.closeSettingsMenu();
+      if (!e.target.closest('#unitsMenu')) this.closeUnitsMenu();
+      /* Native colour dialog clicks land outside the menu — do not dismiss mid-pick. */
+      if (!e.target.closest('#themeMenu') && !this._bgColourPicking) this.closeThemeMenu();
     });
 
     this.$('unitToggle').addEventListener('click', () => {
@@ -156,30 +152,75 @@ const App = {
 
     this.$('unitMenuBtn').addEventListener('click', (e) => {
       e.stopPropagation();
+      this.closeThemeMenu();
       this.toggleUnitsMenu();
     });
 
-    this.$('settingsBtn').addEventListener('click', (e) => {
+    this.$('themeMenuBtn').addEventListener('click', (e) => {
       e.stopPropagation();
-      this.toggleSettingsMenu();
+      this.closeUnitsMenu();
+      this.toggleThemeMenu();
     });
+
+    document.querySelectorAll('[data-theme-opt]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        UI.setThemeMode(btn.getAttribute('data-theme-opt'));
+      });
+    });
+
+    document.querySelectorAll('[data-bg-period]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        UI.setBgEditPeriod(btn.getAttribute('data-bg-period'));
+      });
+    });
+
+    document.querySelectorAll('[data-bg-opt]').forEach((btn) => {
+      if (btn.id === 'bgCustomSwatch') return;
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        UI.setBackgroundMode(btn.getAttribute('data-bg-opt'));
+      });
+    });
+
+    const customPicker = this.$('bgCustomPicker');
+    const customSwatch = this.$('bgCustomSwatch');
+    if (customPicker) {
+      const applyCustom = (e) => {
+        if (e) e.stopPropagation();
+        UI.setCustomBackground(customPicker.value);
+      };
+      customPicker.addEventListener('input', applyCustom);
+      customPicker.addEventListener('change', applyCustom);
+      /* Keep Theme menu open while the OS colour dialog is up. */
+      customPicker.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this._bgColourPicking = true;
+      });
+      customPicker.addEventListener('blur', () => {
+        this._bgColourPicking = false;
+        applyCustom();
+      });
+    }
+    if (customSwatch) {
+      customSwatch.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this._bgColourPicking = true;
+        /* Activate custom with the current picker value even if the hue does not change. */
+        if (customPicker) UI.setCustomBackground(customPicker.value);
+      });
+    }
+
+    document.addEventListener('pointerdown', (e) => {
+      if (this._bgColourPicking && e.target && e.target.id === 'bgCustomPicker') {
+        e.stopPropagation();
+      }
+    }, true);
 
     UI.setChartMode(this.chartMode);
 
-    const locate = () => this.useLocation();
-    this.$('locationBtn').addEventListener('click', locate);
-    const locateSettings = this.$('locationBtnSettings');
-    if (locateSettings) locateSettings.addEventListener('click', locate);
-
-    this.$('rememberToggle').setAttribute('aria-pressed', String(Utils.rememberPlace()));
-    this.$('rememberToggle').addEventListener('click', () => {
-      const on = !Utils.rememberPlace();
-      Utils.safeSet('rememberPlace', on ? 'on' : 'off');
-      if (!on) this._clearSavedPlace();
-      this.$('rememberToggle').setAttribute('aria-pressed', String(on));
-    });
-
-    this.$('themeToggle').addEventListener('click', () => UI.toggleTheme());
+    this.$('locationBtn').addEventListener('click', () => this.useLocation());
 
     this.$('helpToggle').addEventListener('click', () => this.toggleInstructions(true));
     this.$('helpClose').addEventListener('click', () => this.toggleInstructions(false));
@@ -245,19 +286,12 @@ const App = {
     this.$('offlineNotice').addEventListener('click', () => {
       if (navigator.onLine) this.reloadCurrent({ soft: true });
     });
-    this.$('refreshBtn').addEventListener('click', () => {
-      if (navigator.onLine) {
-        this.reloadCurrent({ soft: true });
-      } else {
-        UI.showError('You are offline — check your connection to refresh.');
-      }
-    });
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         this.hideDropdown();
         this.closeUnitsMenu();
-        this.closeSettingsMenu();
+        this.closeThemeMenu();
         this.toggleInstructions(false);
       }
     });
@@ -594,19 +628,13 @@ const App = {
       name = name || this._last.name;
       country = country || this._last.country || '';
     }
-    const btn = this.$('refreshBtn');
-    const clearSpin = () => { if (btn) btn.classList.remove('is-refreshing'); };
     if (Number.isFinite(lat) && Number.isFinite(lon)) {
-      if (btn) btn.classList.add('is-refreshing');
       const label = name || 'Current Location';
       this.loadWeather(lat, lon, label, country, label, opts)
-        .catch((e) => { console.debug('Background load failed:', e); })
-        .finally(clearSpin);
+        .catch((e) => { console.debug('Background load failed:', e); });
     } else if (name) {
-      if (btn) btn.classList.add('is-refreshing');
       this.searchCity(name)
-        .catch((e) => { console.debug('Background load failed:', e); })
-        .finally(clearSpin);
+        .catch((e) => { console.debug('Background load failed:', e); });
     } else {
       UI.showError('Search for a city or use your location to refresh.');
     }
@@ -760,37 +788,35 @@ const App = {
     if (btn) btn.setAttribute('aria-expanded', String(open));
   },
 
-  toggleSettingsMenu() {
-    const dd = this.$('settingsDropdown');
-    const btn = this.$('settingsBtn');
+  _toggleMenu(ddId, btnId) {
+    const dd = this.$(ddId);
+    const btn = this.$(btnId);
     if (!dd) return;
     const open = dd.classList.contains('hidden');
     dd.classList.toggle('hidden', !open);
     if (btn) btn.setAttribute('aria-expanded', String(open));
   },
 
-  closeSettingsMenu() {
-    const dd = this.$('settingsDropdown');
-    const btn = this.$('settingsBtn');
+  _closeMenu(ddId, btnId) {
+    const dd = this.$(ddId);
+    const btn = this.$(btnId);
     if (dd) dd.classList.add('hidden');
     if (btn) btn.setAttribute('aria-expanded', 'false');
   },
 
-  toggleUnitsMenu() {
-    const dd = this.$('unitsDropdown');
-    const btn = this.$('unitMenuBtn');
-    if (!dd) return;
-    const open = dd.classList.contains('hidden');
-    dd.classList.toggle('hidden', !open);
-    btn.setAttribute('aria-expanded', String(open));
+  toggleThemeMenu() {
+    const dd = this.$('themeDropdown');
+    const opening = dd && dd.classList.contains('hidden');
+    this._toggleMenu('themeDropdown', 'themeMenuBtn');
+    if (opening && window.UI) UI._previewEditBackground();
+    if (!opening && window.UI) UI._paintActiveBackground();
   },
-
-  closeUnitsMenu() {
-    const dd = this.$('unitsDropdown');
-    const btn = this.$('unitMenuBtn');
-    if (dd) dd.classList.add('hidden');
-    if (btn) btn.setAttribute('aria-expanded', 'false');
+  closeThemeMenu() {
+    this._closeMenu('themeDropdown', 'themeMenuBtn');
+    if (window.UI) UI._paintActiveBackground();
   },
+  toggleUnitsMenu() { this._toggleMenu('unitsDropdown', 'unitMenuBtn'); },
+  closeUnitsMenu() { this._closeMenu('unitsDropdown', 'unitMenuBtn'); },
 };
 
 document.addEventListener('DOMContentLoaded', () => {

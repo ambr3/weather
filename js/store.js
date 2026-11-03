@@ -15,8 +15,8 @@
  *
  * The namespaced keys below are the ones the app owns. "Clear all data" in the
  * app's settings removes exactly these, and nothing else. Place coordinates
- * stay on their own keys (see Utils.PLACE_KEYS) so the Remember switch can
- * clear them without wiping theme/units.
+ * stay on their own keys (see Utils.PLACE_KEYS) so place data can expire or be
+ * erased without wiping theme/units.
  */
 
 (function () {
@@ -147,8 +147,28 @@
       ? stored.rememberPlace
       : null;
 
+    /* Migrate single background → day/night slots. */
+    var legacyBg = normalizeBackground(stored.background);
+    var legacyCustom = normalizeHex(stored.bgCustom) || "#5faff0";
+    var backgroundDay = stored.backgroundDay != null
+      ? normalizeBackground(stored.backgroundDay)
+      : legacyBg;
+    var backgroundNight = stored.backgroundNight != null
+      ? normalizeBackground(stored.backgroundNight)
+      : (stored.background != null ? legacyBg : "black");
+    var bgCustomDay = normalizeHex(stored.bgCustomDay) || legacyCustom;
+    var bgCustomNight = normalizeHex(stored.bgCustomNight) || legacyCustom;
+
     return {
       theme: stored.theme === "light" || stored.theme === "dark" ? stored.theme : "system",
+      background: backgroundDay,
+      backgroundDay: backgroundDay,
+      backgroundNight: backgroundNight,
+      bgCustom: bgCustomDay,
+      bgCustomDay: bgCustomDay,
+      bgCustomNight: bgCustomNight,
+      /* Last live sun period — theme-boot uses this so night skies paint before weather. */
+      skyPeriod: stored.skyPeriod === "night" ? "night" : "day",
       units: units,
       windUnit: wind,
       visUnit: vis,
@@ -199,6 +219,114 @@
     return value;
   }
 
+  /** grid = orange lines; named colours / custom = solid fills. */
+  var BG_PALETTE = {
+    grid: 1,
+    blue: 1,
+    lightblue: 1,
+    green: 1,
+    red: 1,
+    yellow: 1,
+    black: 1,
+    white: 1,
+    custom: 1
+  };
+
+  /* Older swatch names → nearest new option. */
+  var BG_LEGACY = {
+    sky: "lightblue",
+    ocean: "blue",
+    slate: "black",
+    forest: "green",
+    sunset: "red",
+    violet: "blue",
+    rose: "red",
+    amber: "yellow",
+    plain: "white"
+  };
+
+  function normalizeHex(hex) {
+    if (typeof hex !== "string") return null;
+    var m = /^#([0-9a-fA-F]{6})$/.exec(hex.trim());
+    return m ? "#" + m[1].toLowerCase() : null;
+  }
+
+  function normalizeBackground(background) {
+    if (BG_PALETTE[background]) return background;
+    if (BG_LEGACY[background]) return BG_LEGACY[background];
+    return "grid";
+  }
+
+  function getBackgroundDay() {
+    return normalizeBackground(getSettings().backgroundDay);
+  }
+
+  function getBackgroundNight() {
+    return normalizeBackground(getSettings().backgroundNight);
+  }
+
+  /** Active slot from sun period: "day" | "night". */
+  function getBackground(period) {
+    return period === "night" ? getBackgroundNight() : getBackgroundDay();
+  }
+
+  function getSkyPeriod() {
+    return getSettings().skyPeriod === "night" ? "night" : "day";
+  }
+
+  function setSkyPeriod(period) {
+    var value = period === "night" ? "night" : "day";
+    setSettings({ skyPeriod: value });
+    return value;
+  }
+
+  function setBackground(background, period) {
+    var value = normalizeBackground(background);
+    if (period === "night") {
+      setSettings({ backgroundNight: value, background: value });
+    } else {
+      setSettings({ backgroundDay: value, background: value });
+    }
+    return value;
+  }
+
+  function getBgCustom(period) {
+    var s = getSettings();
+    return period === "night" ? s.bgCustomNight : s.bgCustomDay;
+  }
+
+  function setBgCustom(hex, period) {
+    var value = normalizeHex(hex) || "#5faff0";
+    if (period === "night") {
+      setSettings({ bgCustomNight: value, backgroundNight: "custom", background: "custom" });
+    } else {
+      setSettings({ bgCustomDay: value, bgCustom: value, backgroundDay: "custom", background: "custom" });
+    }
+    return value;
+  }
+
+  /** Rewrite legacy swatch names in storage so paint + boot stay in sync. */
+  function migrateBackgrounds() {
+    var stored = readJSON(KEY_SETTINGS, {});
+    if (!stored || typeof stored !== "object") stored = {};
+    var dayRaw = stored.backgroundDay != null ? stored.backgroundDay : stored.background;
+    var nightRaw = stored.backgroundNight != null ? stored.backgroundNight : stored.background;
+    var day = normalizeBackground(dayRaw);
+    var night = normalizeBackground(nightRaw != null ? nightRaw : "black");
+    if (
+      stored.backgroundDay !== day
+      || stored.backgroundNight !== night
+      || stored.background !== day
+    ) {
+      setSettings({
+        backgroundDay: day,
+        backgroundNight: night,
+        background: day
+      });
+    }
+    return { day: day, night: night };
+  }
+
   // -------------------------------------------------------------------- data
 
   function getData() {
@@ -239,6 +367,13 @@
     setSettings: setSettings,
     getTheme: getTheme,
     setTheme: setTheme,
+    getBackground: getBackground,
+    setBackground: setBackground,
+    getBgCustom: getBgCustom,
+    setBgCustom: setBgCustom,
+    getSkyPeriod: getSkyPeriod,
+    setSkyPeriod: setSkyPeriod,
+    migrateBackgrounds: migrateBackgrounds,
     clearAll: clearAll,
     isPersistent: function () {
       return !!store;

@@ -36,11 +36,21 @@ const UI = {
 
   // Full-orbit around Earth. Rise = left, day = top, set = right, night = bottom.
   // Night only flips the disc paint (dark on top) — orb path direction stays the same.
-  _orbitFor(rise, set, tz, radius) {
-    if (!rise || !set) return null;
-    const r = Utils.parseLocal(rise, tz).getTime();
-    let s = Utils.parseLocal(set, tz).getTime();
-    if (isNaN(r) || isNaN(s)) return null;
+  // Open-Meteo often nulls moonrise (rose yesterday) or moonset (sets tomorrow);
+  // synthesise the missing limb so the orb still shows.
+  _orbitFor(rise, set, tz, radius, nextRise) {
+    if (!rise && !set) return null;
+    const MEAN_UP_MS = 12.42 * 60 * 60 * 1000;
+    const MEAN_CYCLE_MS = 24.84 * 60 * 60 * 1000;
+
+    let r = rise ? Utils.parseLocal(rise, tz).getTime() : NaN;
+    let s = set ? Utils.parseLocal(set, tz).getTime() : NaN;
+    if (rise && isNaN(r)) return null;
+    if (set && isNaN(s)) return null;
+
+    if (!rise && set) r = s - MEAN_UP_MS;
+    else if (rise && !set) s = r + MEAN_UP_MS;
+
     if (s <= r) {
       // Set falls on the next local day — advance by one local day so DST
       // transitions don't skew the path (offset delta between the two days).
@@ -51,15 +61,24 @@ const UI = {
     const dayDur = s - r;
     if (dayDur > 26 * 60 * 60 * 1000 || dayDur <= 0) return null;
 
-    const offRise = Utils.tzOffsetMs(tz, r);
-    const offNext = Utils.tzOffsetMs(tz, r + 24 * 60 * 60 * 1000);
-    const nextRise = r + 24 * 60 * 60 * 1000 + (offRise - offNext);
-    const nightDur = Math.max(1, nextRise - s);
-    const cycle = nextRise - r;
+    let nextR = nextRise ? Utils.parseLocal(nextRise, tz).getTime() : NaN;
+    if (!Number.isFinite(nextR) || nextR <= s) {
+      if (rise) {
+        const offRise = Utils.tzOffsetMs(tz, r);
+        const offNext = Utils.tzOffsetMs(tz, r + 24 * 60 * 60 * 1000);
+        nextR = r + 24 * 60 * 60 * 1000 + (offRise - offNext);
+      } else {
+        nextR = r + MEAN_CYCLE_MS;
+      }
+    }
+    if (nextR <= s) nextR = s + Math.max(1, MEAN_CYCLE_MS - dayDur);
+
+    const nightDur = Math.max(1, nextR - s);
+    const cycle = nextR - r;
 
     let now = Date.now();
     if (now < r) now += Math.ceil((r - now) / cycle) * cycle;
-    if (now >= nextRise) now -= Math.floor((now - r) / cycle) * cycle;
+    if (now >= nextR) now -= Math.floor((now - r) / cycle) * cycle;
 
     let angle;
     let below;
@@ -210,7 +229,13 @@ const UI = {
   _syncEarthOrientation(isNight) {
     const host = this.$('earthArcSection') || this.$('earthArc');
     if (host) host.classList.toggle('earth-arc--night', !!isNight);
-    document.documentElement.setAttribute('data-sky', isNight ? 'night' : 'day');
+    const sky = isNight ? 'night' : 'day';
+    const root = document.documentElement;
+    const skyChanged = root.getAttribute('data-sky') !== sky;
+    root.setAttribute('data-sky', sky);
+    if (skyChanged && window.Store && window.Store.setSkyPeriod) {
+      window.Store.setSkyPeriod(sky);
+    }
     const hemi = document.getElementById('earthHemispheres');
     if (hemi) hemi.setAttribute('transform', isNight ? 'rotate(180 50 50)' : '');
     // Day: S toward Day mark (top), N toward Night (bottom), E=rise (left), W=set (right).
@@ -224,6 +249,7 @@ const UI = {
       el.setAttribute('x', String(pos[k][0]));
       el.setAttribute('y', String(pos[k][1]));
     });
+    this._paintActiveBackground();
   },
 
   _setOrbPositions(sun, moon) {
@@ -241,9 +267,9 @@ const UI = {
 
   updateLiveClock() {
     if (!this._arc) return;
-    const { tz, sunrise, sunset, moonrise, moonset, sunR, moonR, weatherCode } = this._arc;
+    const { tz, sunrise, sunset, moonrise, moonset, nextMoonrise, sunR, moonR, weatherCode } = this._arc;
     const sun = this._orbitFor(sunrise, sunset, tz, sunR);
-    const moon = this._orbitFor(moonrise, moonset, tz, moonR);
+    const moon = this._orbitFor(moonrise, moonset, tz, moonR, nextMoonrise);
     const sunEl = document.querySelector('.current-weather__arc-sun');
     const moonEl = document.querySelector('.current-weather__arc-moon');
     if (sunEl && sun) {
@@ -259,7 +285,10 @@ const UI = {
       moonEl.classList.add('is-hidden');
     }
     this._setOrbPositions(sun, moon);
-    this._syncEarthOrientation(!!(sun && sun.below));
+    // Mirror renderCurrentWeather: when sun times are missing, keep API is_day
+    // instead of treating a null orbit as daytime.
+    const isNight = sun ? !!sun.below : this._arc.isDay === 0;
+    this._syncEarthOrientation(isNight);
     // Swap the icon to its night version when the sun crosses the horizon.
     if (sun && weatherCode != null) {
       const isDay = sun.below ? 0 : 1;
@@ -403,19 +432,185 @@ const UI = {
   _paintTheme(mode) {
     const resolved = window.Theme.apply(mode);
     const label = this.$('themeLabel');
-    if (label) label.textContent = mode.charAt(0).toUpperCase() + mode.slice(1);
+    if (label) label.textContent = 'Theme';
     this._setThemeIcon(resolved === 'dark');
+    document.querySelectorAll('[data-theme-opt]').forEach((btn) => {
+      btn.setAttribute('aria-checked', String(btn.getAttribute('data-theme-opt') === mode));
+    });
   },
+
+  _bgEditPeriod: 'day',
 
   initThemeToggle() {
+    if (window.Store && window.Store.migrateBackgrounds) window.Store.migrateBackgrounds();
     this._paintTheme(window.Theme.current());
+    this._paintActiveBackground();
   },
 
-  toggleTheme() {
-    const order = ['system', 'light', 'dark'];
-    const next = order[(order.indexOf(window.Theme.current()) + 1) % order.length];
+  setThemeMode(mode) {
+    const next = mode === 'light' || mode === 'dark' ? mode : 'system';
     window.Theme.set(next);
     this._paintTheme(next);
+  },
+
+  _BG_OPTS: {
+    grid: 1, blue: 1, lightblue: 1, green: 1, red: 1,
+    yellow: 1, black: 1, white: 1, custom: 1
+  },
+
+  _skyPeriod() {
+    return document.documentElement.getAttribute('data-sky') === 'night' ? 'night' : 'day';
+  },
+
+  _resolveBg(mode) {
+    if (this._BG_OPTS[mode]) return mode;
+    const legacy = {
+      sky: 'lightblue', ocean: 'blue', slate: 'black', forest: 'green',
+      sunset: 'red', violet: 'blue', rose: 'red', amber: 'yellow', plain: 'white'
+    };
+    return legacy[mode] || 'grid';
+  },
+
+  setBgEditPeriod(period) {
+    this._bgEditPeriod = period === 'night' ? 'night' : 'day';
+    this._previewEditBackground();
+  },
+
+  _paintBgPeriodChrome() {
+    const period = this._bgEditPeriod === 'night' ? 'night' : 'day';
+    const dayBtn = this.$('bgPeriodDay');
+    const nightBtn = this.$('bgPeriodNight');
+    if (dayBtn) dayBtn.setAttribute('aria-pressed', String(period === 'day'));
+    if (nightBtn) nightBtn.setAttribute('aria-pressed', String(period === 'night'));
+    const hint = this.$('bgPeriodHint');
+    if (hint) {
+      hint.textContent = period === 'night'
+        ? 'Night colour — switches at sunrise/sunset (not Light/Dark)'
+        : 'Day colour — switches at sunrise/sunset (not Light/Dark)';
+    }
+    const stored = this._resolveBg(window.Store && window.Store.getBackground
+      ? window.Store.getBackground(period)
+      : 'grid');
+    const custom = window.Store && window.Store.getBgCustom
+      ? window.Store.getBgCustom(period)
+      : '#5faff0';
+    const colour = /^#[0-9a-fA-F]{6}$/.test(custom) ? custom.toLowerCase() : '#5faff0';
+    const picker = this.$('bgCustomPicker');
+    if (picker) picker.value = colour;
+    /* Face colour via dynCSS — never element.style (CSP / smoke). */
+    if (window.Utils && window.Utils.dynCSS) {
+      window.Utils.dynCSS.set(
+        'bg-custom-swatch',
+        `#bgCustomSwatch { --swatch: ${colour}; }`
+      );
+    }
+    document.querySelectorAll('[data-bg-opt]').forEach((btn) => {
+      btn.setAttribute('aria-checked', String(btn.getAttribute('data-bg-opt') === stored));
+    });
+  },
+
+  _bgLuma(hex) {
+    const m = /^#([0-9a-fA-F]{6})$/.exec(hex || '');
+    if (!m) return 0.5;
+    const n = parseInt(m[1], 16);
+    const r = ((n >> 16) & 255) / 255;
+    const g = ((n >> 8) & 255) / 255;
+    const b = (n & 255) / 255;
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  },
+
+  _bgToneFor(value, customHex) {
+    if (value === 'grid') return null;
+    if (value === 'black') return 'dark';
+    if (value === 'white' || value === 'yellow' || value === 'lightblue'
+      || value === 'blue' || value === 'green' || value === 'red') {
+      return 'light';
+    }
+    /* custom: dark cards only on near-black; otherwise light frosted cards. */
+    return this._bgLuma(customHex) < 0.18 ? 'dark' : 'light';
+  },
+
+  _applyBackground(mode, customHex) {
+    const value = this._resolveBg(mode);
+    const colour = /^#[0-9a-fA-F]{6}$/.test(customHex || '') ? customHex.toLowerCase() : '#5faff0';
+    const root = document.documentElement;
+    const tone = this._bgToneFor(value, colour);
+    if (tone) root.setAttribute('data-bg-tone', tone);
+    else root.removeAttribute('data-bg-tone');
+
+    if (window.Utils && window.Utils.dynCSS) {
+      /* Must beat theme-boot adopted sheet (same specificity, later in the list). */
+      window.Utils.dynCSS.set('bg-custom', `html { --bg-custom: ${colour}; }`);
+      if (value !== 'grid' && value !== 'custom') {
+        const solids = {
+          blue: '#3b82f6', lightblue: '#7dd3fc', green: '#22c55e', red: '#ef4444',
+          yellow: '#facc15', black: '#0a0a0a', white: '#ffffff'
+        };
+        const solid = solids[value] || colour;
+        window.Utils.dynCSS.set(
+          'bg-solid-live',
+          `html[data-bg="${value}"] { --bg-solid: ${solid}; --color-bg-start: ${solid}; background-color: ${solid}; }`
+        );
+        window.Utils.dynCSS.set(
+          'bg-solid-body',
+          `html[data-bg="${value}"] body, html[data-bg="${value}"] body::before { background-color: ${solid}; background-image: none; }`
+        );
+      } else if (value === 'custom') {
+        window.Utils.dynCSS.set(
+          'bg-solid-live',
+          `html[data-bg="custom"] { --bg-solid: ${colour}; --color-bg-start: ${colour}; background-color: ${colour}; }`
+        );
+        window.Utils.dynCSS.set(
+          'bg-solid-body',
+          `html[data-bg="custom"] body, html[data-bg="custom"] body::before { background-color: ${colour}; background-image: none; }`
+        );
+      } else {
+        window.Utils.dynCSS.del('bg-solid-live');
+        window.Utils.dynCSS.del('bg-solid-body');
+      }
+    }
+    root.setAttribute('data-bg', value);
+  },
+
+  _previewEditBackground() {
+    const period = this._bgEditPeriod === 'night' ? 'night' : 'day';
+    const mode = window.Store && window.Store.getBackground
+      ? window.Store.getBackground(period)
+      : 'grid';
+    const custom = window.Store && window.Store.getBgCustom
+      ? window.Store.getBgCustom(period)
+      : '#5faff0';
+    this._applyBackground(mode, custom);
+    this._paintBgPeriodChrome();
+  },
+
+  _paintActiveBackground() {
+    const sky = this._skyPeriod();
+    const mode = window.Store && window.Store.getBackground
+      ? window.Store.getBackground(sky)
+      : 'grid';
+    const custom = window.Store && window.Store.getBgCustom
+      ? window.Store.getBgCustom(sky)
+      : '#5faff0';
+    this._applyBackground(mode, custom);
+    this._paintBgPeriodChrome();
+  },
+
+  setBackgroundMode(mode) {
+    const next = this._resolveBg(mode);
+    const period = this._bgEditPeriod === 'night' ? 'night' : 'day';
+    if (window.Store && window.Store.setBackground) window.Store.setBackground(next, period);
+    /* Always preview the colour just picked so Day/Night edits are visible now. */
+    this._previewEditBackground();
+  },
+
+  setCustomBackground(hex) {
+    const period = this._bgEditPeriod === 'night' ? 'night' : 'day';
+    const colour = window.Store && window.Store.setBgCustom
+      ? window.Store.setBgCustom(hex, period)
+      : '#5faff0';
+    this._previewEditBackground();
+    return colour;
   },
 
   _esc(str) {

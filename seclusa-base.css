@@ -18,6 +18,10 @@
  * here. There is no brand colour: the accent is simply the opposite of the
  * background, white on black and black on white.
  *
+ * The default page sky is orange ruled lines + a soft orange corner glow on
+ * that black/white surface (Light = white sheet, Dark = near-black). Apps that
+ * need a flat or solid sky set data-bg to something other than "grid".
+ *
  * Two things keep colour, because colour there carries meaning and removing it
  * would remove information rather than decoration:
  *   - status (--danger, --warn, --ok): an overdue reminder has to look overdue
@@ -71,6 +75,10 @@
 
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.13), 0 1px 2px rgba(0, 0, 0, 0.09);
   --radius: 10px;
+
+  /* Default orange lines sky (light sheet). */
+  --grid-line: color-mix(in srgb, var(--warm) 28%, transparent);
+  --grid-wash: color-mix(in srgb, var(--warm) 22%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -106,6 +114,9 @@
     --ok: #6cc48f;
 
     --shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+
+    --grid-line: color-mix(in srgb, var(--warm) 32%, transparent);
+    --grid-wash: color-mix(in srgb, var(--warm) 28%, transparent);
   }
 }
 
@@ -136,6 +147,8 @@
   --danger: #a1160d;
   --warn: #6b4b00;
   --ok: #1c6b3c;
+  --grid-line: color-mix(in srgb, var(--warm) 28%, transparent);
+  --grid-wash: color-mix(in srgb, var(--warm) 22%, transparent);
 }
 
 [data-theme="dark"] {
@@ -162,4 +175,39 @@
   --danger: #f2857c;
   --warn: #e0b25a;
   --ok: #6cc48f;
+  --grid-line: color-mix(in srgb, var(--warm) 32%, transparent);
+  --grid-wash: color-mix(in srgb, var(--warm) 28%, transparent);
+}
+
+/*
+ * Default Seclusa sky: orange ruled lines + soft corner glow.
+ * Light = white sheet; Dark = near-black. No filter / background-attachment:fixed.
+ * Opt out: set data-bg to anything except "grid" (Weather solid skies do this).
+ */
+html {
+  background-color: var(--bg);
+}
+
+html body {
+  background-color: var(--bg);
+}
+
+html body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+    radial-gradient(ellipse 95% 60% at 12% -6%, var(--grid-wash), transparent 58%),
+    radial-gradient(ellipse 70% 48% at 92% 108%, var(--grid-wash), transparent 52%);
+  background-size: 64px 64px, 64px 64px, auto, auto;
+}
+
+html[data-bg]:not([data-bg="grid"]) body::before {
+  background-image: none;
+  background-color: var(--bg-solid, var(--bg));
 }

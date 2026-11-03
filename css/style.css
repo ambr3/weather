@@ -238,21 +238,20 @@ body {
   100% { transform: rotate(360deg); }
 }
 
-/* Header */
+/* Header — centred brand card */
 .header {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-areas:
-    "logo controls"
-    "attr controls";
-  justify-items: start;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.35rem 1.5rem;
-  width: min(900px, calc(100% - 3rem));
-  margin: max(1rem, env(safe-area-inset-top)) auto 0.85rem;
-  padding: 1.1rem 1.4rem;
+  justify-content: center;
+  gap: 0.4rem;
+  width: fit-content;
+  max-width: calc(100% - 2rem);
+  margin: max(1rem, env(safe-area-inset-top)) auto 0.75rem;
+  padding: 1rem 1.45rem 0.9rem;
   position: relative;
   z-index: 1;
+  text-align: center;
   background: var(--shell-bg, var(--surface, var(--color-bg-start)));
   border: 1px solid var(--color-card-border);
   border-radius: calc(var(--radius) + 4px);
@@ -261,42 +260,38 @@ body {
 }
 
 .header__logo {
-  grid-area: logo;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  justify-content: center;
+  gap: 0.7rem;
   min-width: 0;
-  overflow: hidden;
+  max-width: 100%;
 }
 
 .header__attribution {
-  grid-area: attr;
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   color: var(--color-text-muted);
   opacity: 0.7;
-  white-space: nowrap;
+  line-height: 1.3;
+  text-align: center;
 }
 
 .header__text {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.06rem;
+  gap: 0.12rem;
   min-width: 0;
-  flex: 1 1 0;
-  overflow: hidden;
+  text-align: left;
 }
 
 .header__motto {
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-style: italic;
   font-weight: 500;
   color: var(--color-text-muted);
   opacity: 0.85;
-  line-height: 1.1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.25;
   max-width: 100%;
 }
 
@@ -311,28 +306,243 @@ body {
 
 .header__logo img {
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
 }
 
 .header__logo h1 {
   font-family: var(--font-heading);
-  font-size: 1.4rem;
+  font-size: 1.45rem;
   font-weight: 700;
   letter-spacing: -0.02em;
-  max-width: 100%;
+  line-height: 1.15;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.header__controls {
-  grid-area: controls;
+/* Controls toolbar — compact centred card under the brand header. */
+.toolbar {
   display: flex;
-  gap: 0.5rem;
+  justify-content: center;
+  width: fit-content;
+  max-width: calc(100% - 2rem);
+  margin: 0 auto 1rem;
+  padding: 0.5rem;
+  position: relative;
+  z-index: 2;
+  background: var(--shell-bg, var(--surface, var(--color-bg-start)));
+  border: 1px solid var(--color-card-border);
+  border-radius: calc(var(--radius) + 4px);
+  box-shadow: var(--shell-shadow, var(--shadow));
+}
+
+.toolbar__scroll {
+  display: flex;
   align-items: center;
-  flex-shrink: 0;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  overflow: visible;
+}
+
+.toolbar__menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.toolbar__tab {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-card-border);
+  background: var(--color-card);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: var(--shadow);
+  transition: background 0.2s, transform 0.15s, border-color 0.2s;
+}
+
+.toolbar__tab:hover {
+  background: var(--color-card-hover);
+}
+
+.toolbar__tab:active {
+  transform: scale(0.96);
+}
+
+.toolbar__tab[aria-pressed="true"] {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+.toolbar__tab--menu {
+  padding-right: 0.65rem;
+}
+
+.toolbar__caret {
+  opacity: 0.7;
+}
+
+.toolbar__tab--icon {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  justify-content: center;
+}
+
+.toolbar__dropdown {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  min-width: 9.5rem;
+  padding: 0.35rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow), 0 14px 36px -14px rgba(0, 0, 0, 0.4);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.toolbar__dropdown--theme {
+  min-width: 15.5rem;
+  padding: 0.55rem;
+  gap: 0.45rem;
+}
+
+.toolbar__section-label {
+  margin: 0.15rem 0.2rem 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.toolbar__hint {
+  margin: 0 0.2rem 0.1rem;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+}
+
+.toolbar__option--chip[data-bg-period][aria-pressed="true"] {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+.toolbar__mode-row {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.toolbar__option {
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.toolbar__option--chip {
+  flex: 1;
+  text-align: center;
+  padding: 0.45rem 0.35rem;
+  border: 1px solid var(--color-card-border);
+  background: var(--color-chip-bg, transparent);
+  font-size: 0.8rem;
+}
+
+.toolbar__option:hover,
+.toolbar__option--chip:hover {
+  background: var(--color-card-hover);
+}
+
+.toolbar__option[aria-checked="true"],
+.toolbar__option--chip[aria-checked="true"] {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+.toolbar__swatches {
+  display: grid;
+  grid-template-columns: repeat(5, 1.7rem);
+  gap: 0.4rem;
+  padding: 0.15rem 0.1rem 0.25rem;
+}
+
+.toolbar__swatch {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  border: 2px solid var(--color-card-border);
+  background: var(--swatch, #888);
+  cursor: pointer;
+  padding: 0;
+}
+
+.toolbar__swatch[data-bg-opt="grid"] {
+  background:
+    linear-gradient(rgba(196, 94, 18, 0.4) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(196, 94, 18, 0.4) 1px, transparent 1px),
+    radial-gradient(circle at 30% 30%, rgba(196, 94, 18, 0.4), transparent 65%),
+    #1a1a1a;
+  background-size: 7px 7px, 7px 7px, auto, auto;
+}
+.toolbar__swatch[data-bg-opt="blue"] { --swatch: #3b82f6; }
+.toolbar__swatch[data-bg-opt="lightblue"] { --swatch: #7dd3fc; }
+.toolbar__swatch[data-bg-opt="green"] { --swatch: #22c55e; }
+.toolbar__swatch[data-bg-opt="red"] { --swatch: #ef4444; }
+.toolbar__swatch[data-bg-opt="yellow"] { --swatch: #facc15; }
+.toolbar__swatch[data-bg-opt="black"] { --swatch: #0a0a0a; }
+.toolbar__swatch[data-bg-opt="white"] { --swatch: #ffffff; }
+
+.toolbar__swatch--custom {
+  position: relative;
+  overflow: hidden;
+  /* Rainbow ring; centre shows the actual custom colour (defaults to sky blue). */
+  background:
+    radial-gradient(circle at center, var(--swatch, var(--bg-custom, #5faff0)) 54%, transparent 56%),
+    conic-gradient(from 0deg, #f44, #fd0, #4d4, #0df, #44f, #d0f, #f44);
+}
+
+.toolbar__swatch--custom input[type="color"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.toolbar__swatch[aria-checked="true"] {
+  border-color: var(--color-text);
+  box-shadow: 0 0 0 2px var(--color-accent-text, #fff), 0 0 0 4px var(--color-text);
+}
+
+.units-menu.toolbar__menu .toolbar__dropdown {
+  right: 0;
+  left: auto;
+  min-width: 11rem;
 }
 
 .icon-btn {
@@ -366,109 +576,8 @@ body {
   transform: scale(0.94);
 }
 
-.unit-toggle {
-  background: var(--color-card);
-  border: 1px solid var(--color-card-border);
-  color: var(--color-text);
-  padding: 0.45rem 1rem;
-  border-radius: 50px;
-  cursor: pointer;
-  font-family: var(--font-body);
-  font-size: 0.9rem;
-  font-weight: 600;
-  transition: background 0.2s, transform 0.2s;
-}
-
-.unit-toggle:hover {
-  background: var(--color-card-hover);
-  transform: scale(1.03);
-}
-
 .units-menu {
   position: relative;
-}
-
-.settings-menu {
-  position: relative;
-}
-
-.settings-menu__dropdown {
-  position: absolute;
-  top: calc(100% + 0.5rem);
-  right: 0;
-  left: auto;
-  min-width: 200px;
-  max-width: calc(100vw - 3rem);
-  background: var(--color-card);
-  border: 1px solid var(--color-card-border);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow), 0 14px 36px -14px rgba(0, 0, 0, 0.4);
-  padding: 0.6rem;
-  z-index: 50;
-  animation: settingsPop 0.18s ease;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  transform-origin: top right;
-}
-
-@keyframes settingsPop {
-  from { opacity: 0; transform: scale(0.92); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-.settings-pills {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.settings-pill {
-  background: var(--color-chip-bg, rgba(127, 127, 127, 0.14));
-  border: 1px solid var(--color-card-border);
-  color: var(--color-text);
-  padding: 0.6rem 1.2rem;
-  border-radius: 50px;
-  cursor: pointer;
-  font-family: var(--font-body);
-  font-size: 1rem;
-  font-weight: 700;
-  font-family: var(--font-body);
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  width: 100%;
-  justify-content: flex-start;
-  transition: background 0.2s;
-}
-
-.settings-pill:hover {
-  background: var(--color-card-hover);
-}
-
-.settings-pill[aria-pressed="true"] {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: var(--color-accent-text);
-}
-
-.units-menu .unit-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.units-menu__dropdown {
-  position: absolute;
-  top: calc(100% + 0.75rem);
-  right: 0;
-  min-width: 180px;
-  background: var(--color-card);
-  border: 1px solid var(--color-card-border);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow);
-  padding: 0.4rem;
-  z-index: 50;
 }
 
 .units-menu__row {
@@ -797,76 +906,130 @@ body {
 }
 
 /*
- * Sky theme: one --sky channel drives grid, page, shell, and cards so light/dark
- * and day/night feel like the same atmosphere instead of a grid stuck on B&W UI.
- */
-/*
- * Sky theme: one --sky channel tints grid + surfaces.
+ * Backgrounds:
+ *   grid  — quiet orange lines (default)
+ *   named colours / custom — solid fill, no grid
  * No filter / background-attachment:fixed — those flicker on scroll.
  */
 html {
-  --sky: 110, 185, 245;
-  --grid-line: rgba(var(--sky), 0.55);
-  --grid-wash: rgba(var(--sky), 0.28);
   --shell-bg: var(--surface, var(--color-bg-start));
   --shell-shadow: var(--shadow), 0 14px 36px -14px rgba(0, 0, 0, 0.35);
+  --grid-line: rgba(196, 94, 18, 0.14);
+  --grid-wash: rgba(196, 94, 18, 0.06);
+  --bg-solid: var(--color-bg-start);
 }
 
-html[data-theme="light"][data-sky="day"],
-html[data-theme="light"]:not([data-sky]) {
-  --sky: 95, 175, 240;
-  --grid-line: rgba(var(--sky), 0.5);
-  --grid-wash: rgba(var(--sky), 0.3);
-  --color-bg-start: color-mix(in srgb, rgb(var(--sky)) 8%, #ffffff);
-  --color-card: color-mix(in srgb, rgb(var(--sky)) 6%, #f2f2f2);
-  --color-card-hover: color-mix(in srgb, rgb(var(--sky)) 8%, #e6e6e6);
-  --color-card-border: color-mix(in srgb, rgb(var(--sky)) 20%, #d4d4d4);
-  --color-chip-bg: color-mix(in srgb, rgb(var(--sky)) 7%, #f2f2f2);
-  --shell-bg: color-mix(in srgb, rgb(var(--sky)) 5%, #ffffff);
-  --shell-shadow: 0 1px 3px rgba(var(--sky), 0.14), 0 14px 36px -14px rgba(40, 110, 180, 0.28);
+html[data-theme="light"] {
+  --grid-line: rgba(196, 94, 18, 0.2);
+  --grid-wash: rgba(196, 94, 18, 0.22);
 }
 
-html[data-theme="light"][data-sky="night"] {
-  --sky: 0, 0, 0;
-  --grid-line: rgba(0, 0, 0, 0.28);
-  --grid-wash: rgba(0, 0, 0, 0.08);
-  --color-bg-start: color-mix(in srgb, #0a0a0a 3.5%, #ffffff);
-  --color-card: color-mix(in srgb, #0a0a0a 4%, #f2f2f2);
-  --color-card-hover: color-mix(in srgb, #0a0a0a 6%, #e6e6e6);
-  --color-card-border: color-mix(in srgb, #0a0a0a 10%, #d4d4d4);
-  --color-chip-bg: color-mix(in srgb, #0a0a0a 5%, #f2f2f2);
-  --shell-bg: color-mix(in srgb, #0a0a0a 2%, #ffffff);
-  --shell-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 14px 36px -14px rgba(0, 0, 0, 0.28);
+html[data-theme="dark"] {
+  --grid-line: rgba(232, 140, 70, 0.22);
+  --grid-wash: rgba(196, 94, 18, 0.3);
 }
 
-html[data-theme="dark"][data-sky="day"],
-html[data-theme="dark"]:not([data-sky]) {
-  --sky: 150, 210, 255;
-  --grid-line: rgba(var(--sky), 0.45);
-  --grid-wash: rgba(var(--sky), 0.24);
-  --color-bg-start: color-mix(in srgb, rgb(var(--sky)) 7%, #0a0a0a);
-  --color-card: color-mix(in srgb, rgb(var(--sky)) 7%, #1c1c1c);
-  --color-card-hover: color-mix(in srgb, rgb(var(--sky)) 9%, #262626);
-  --color-card-border: color-mix(in srgb, rgb(var(--sky)) 16%, #2e2e2e);
-  --color-chip-bg: color-mix(in srgb, rgb(var(--sky)) 8%, #1c1c1c);
-  --shell-bg: color-mix(in srgb, rgb(var(--sky)) 5%, #111111);
-  --shell-shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 14px 36px -14px rgba(40, 120, 200, 0.35);
+/* Solid colour fills (no lines). */
+html[data-bg="blue"] { --bg-solid: #3b82f6; }
+html[data-bg="lightblue"] { --bg-solid: #7dd3fc; }
+html[data-bg="green"] { --bg-solid: #22c55e; }
+html[data-bg="red"] { --bg-solid: #ef4444; }
+html[data-bg="yellow"] { --bg-solid: #facc15; }
+html[data-bg="black"] { --bg-solid: #0a0a0a; }
+html[data-bg="white"] { --bg-solid: #ffffff; }
+html[data-bg="custom"] { --bg-solid: var(--bg-custom, #5faff0); }
+
+html[data-bg="blue"],
+html[data-bg="lightblue"],
+html[data-bg="green"],
+html[data-bg="red"],
+html[data-bg="yellow"],
+html[data-bg="black"],
+html[data-bg="white"],
+html[data-bg="custom"] {
+  --color-bg-start: var(--bg-solid);
+  background-color: var(--bg-solid);
 }
 
-html[data-theme="dark"][data-sky="night"] {
-  --sky: 255, 255, 255;
-  --grid-line: rgba(255, 255, 255, 0.32);
-  --grid-wash: rgba(255, 255, 255, 0.1);
-  --color-bg-start: color-mix(in srgb, #ffffff 3%, #0a0a0a);
-  --color-card: color-mix(in srgb, #ffffff 5%, #1c1c1c);
-  --color-card-hover: color-mix(in srgb, #ffffff 7%, #262626);
-  --color-card-border: color-mix(in srgb, #ffffff 10%, #2e2e2e);
-  --color-chip-bg: color-mix(in srgb, #ffffff 5%, #1c1c1c);
-  --shell-bg: color-mix(in srgb, #ffffff 4%, #111111);
+html[data-bg="blue"] body,
+html[data-bg="lightblue"] body,
+html[data-bg="green"] body,
+html[data-bg="red"] body,
+html[data-bg="yellow"] body,
+html[data-bg="black"] body,
+html[data-bg="white"] body,
+html[data-bg="custom"] body {
+  background-color: var(--bg-solid);
+}
+
+/*
+ * Solid page colours: cards follow the page, not Light/Dark mode.
+ * Light/vivid pages → light frosted cards + dark type (readable on white/blue/etc).
+ * Near-black pages → dark cards + light type.
+ */
+html[data-bg="white"],
+html[data-bg="yellow"],
+html[data-bg="lightblue"],
+html[data-bg="blue"],
+html[data-bg="green"],
+html[data-bg="red"],
+html[data-bg-tone="light"] {
+  --shell-bg: color-mix(in srgb, #ffffff 90%, var(--bg-solid));
+  --color-card: color-mix(in srgb, #ffffff 92%, var(--bg-solid));
+  --color-card-hover: #ffffff;
+  --color-card-border: color-mix(in srgb, #0a0a0a 14%, transparent);
+  --color-chip-bg: color-mix(in srgb, #ffffff 78%, var(--bg-solid));
+  --color-text: #0a0a0a;
+  --color-text-muted: #4a4a4a;
+  --color-accent: #0a0a0a;
+  --color-accent-2: #000000;
+  --color-accent-text: #ffffff;
+  --shell-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 14px 36px -14px rgba(0, 0, 0, 0.28);
+}
+
+html[data-bg="black"],
+html[data-bg-tone="dark"] {
+  --shell-bg: #141414;
+  --color-card: #1c1c1c;
+  --color-card-hover: #262626;
+  --color-card-border: #2e2e2e;
+  --color-chip-bg: #1c1c1c;
+  --color-text: #f5f5f5;
+  --color-text-muted: #a3a3a3;
+  --color-accent: #ffffff;
+  --color-accent-2: #ffffff;
+  --color-accent-text: #0a0a0a;
   --shell-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 14px 36px -14px rgba(0, 0, 0, 0.55);
 }
 
-/* One fixed layer, paint only — no filter (filters on fixed layers flicker while scrolling). */
+/* Custom: tone attribute wins over named defaults when both could apply. */
+html[data-bg="custom"][data-bg-tone="light"] {
+  --shell-bg: color-mix(in srgb, #ffffff 90%, var(--bg-solid));
+  --color-card: color-mix(in srgb, #ffffff 92%, var(--bg-solid));
+  --color-card-hover: #ffffff;
+  --color-card-border: color-mix(in srgb, #0a0a0a 14%, transparent);
+  --color-chip-bg: color-mix(in srgb, #ffffff 78%, var(--bg-solid));
+  --color-text: #0a0a0a;
+  --color-text-muted: #4a4a4a;
+  --color-accent: #0a0a0a;
+  --color-accent-2: #000000;
+  --color-accent-text: #ffffff;
+}
+
+html[data-bg="custom"][data-bg-tone="dark"] {
+  --shell-bg: color-mix(in srgb, #141414 88%, var(--bg-solid));
+  --color-card: color-mix(in srgb, #1c1c1c 90%, var(--bg-solid));
+  --color-card-hover: color-mix(in srgb, #262626 92%, var(--bg-solid));
+  --color-card-border: color-mix(in srgb, #ffffff 14%, transparent);
+  --color-chip-bg: color-mix(in srgb, #1c1c1c 85%, var(--bg-solid));
+  --color-text: #f5f5f5;
+  --color-text-muted: #a3a3a3;
+  --color-accent: #ffffff;
+  --color-accent-2: #ffffff;
+  --color-accent-text: #0a0a0a;
+}
+
+/* One fixed layer, paint only. */
 html[data-theme="light"] body::before,
 html[data-theme="dark"] body::before {
   content: "";
@@ -875,12 +1038,18 @@ html[data-theme="dark"] body::before {
   z-index: -1;
   pointer-events: none;
   background-color: var(--color-bg-start);
+  background-image: none;
+}
+
+/* Lines theme: orange grid + soft corner blur. */
+html[data-bg="grid"] body::before,
+html:not([data-bg]) body::before {
   background-image:
     linear-gradient(var(--grid-line) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
     radial-gradient(ellipse 95% 60% at 12% -6%, var(--grid-wash), transparent 58%),
     radial-gradient(ellipse 70% 48% at 92% 108%, var(--grid-wash), transparent 52%);
-  background-size: 56px 56px, 56px 56px, auto, auto;
+  background-size: 64px 64px, 64px 64px, auto, auto;
 }
 
 html[data-theme="light"] body::after,

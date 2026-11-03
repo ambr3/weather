@@ -4,6 +4,32 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
+## 0.7.17 — 2026-11-03
+
+- Live clock keeps night mode when sun times are missing (falls back to API `is_day` instead of forcing day).
+- Boot restores the last day/night sky slot so the night background paints before weather loads.
+- Moon orb falls back to tomorrow’s rise when Open-Meteo omits both of today’s rise and set.
+
+## 0.7.16 — 2026-11-03
+
+- Custom sky colour updates stick (`window.Utils` is exposed so live picks actually paint; was stuck on the boot/default blue).
+
+## 0.7.15 — 2026-11-03
+
+- Solid sky backgrounds use contrasting cards/type (light frosted cards on colour/white; dark cards only on near-black) so Dark mode no longer leaves white labels on a white page.
+
+## 0.7.14 — 2026-11-03
+
+- Moon orb returns when Open-Meteo omits moonrise or moonset for the calendar day.
+
+## 0.7.13 — 2026-11-03
+
+- Fix sky background colours not applying (legacy swatch migration + live preview).
+- Theme toolbar pill always labelled Theme (not Dark/Light).
+- Day/Night colour picks preview immediately; sun period still switches them live.
+- Footer Open source link points at the GitHub repo.
+- Compact centred toolbar; larger brand card; Remember control removed (3-day last-used memory).
+
 ## 0.7.12 — 2026-11-02
 
 - Mobile portrait header: keep settings clear of the title (clip/ellipsis, hide motto on narrow screens).

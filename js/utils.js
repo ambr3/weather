@@ -374,7 +374,7 @@ const Utils = {
     };
   },
 
-  PREF_KEYS: ['units', 'windUnit', 'visUnit', 'pressUnit', 'chartMode', 'rememberPlace'],
+  PREF_KEYS: ['units', 'windUnit', 'visUnit', 'pressUnit', 'chartMode'],
 
   safeGet(key, fallback) {
     if (this.PREF_KEYS.includes(key) && window.Store && window.Store.getSettings) {
@@ -395,12 +395,12 @@ const Utils = {
 
   PLACE_KEYS: ['lastCity', 'lastCountry', 'lastLat', 'lastLon', 'lastPlaceAt', 'weatherCache'],
 
+  /** Always on — last place is kept for WEATHER_CACHE_TTL_MS after last use. */
   rememberPlace() {
-    return this.safeGet('rememberPlace', 'on') !== 'off';
+    return true;
   },
 
   safeSet(key, value) {
-    if (this.PLACE_KEYS.includes(key) && !this.rememberPlace()) return;
     if (this.PREF_KEYS.includes(key) && window.Store && window.Store.setSettings) {
       try {
         const patch = {};
@@ -446,7 +446,6 @@ const Utils = {
   },
 
   saveWeatherCache(entry) {
-    if (!this.rememberPlace()) return;
     try {
       const raw = JSON.stringify(entry);
       if (raw.length > this.WEATHER_CACHE_MAX_BYTES) return;
@@ -552,3 +551,6 @@ const Utils = {
     return clone;
   },
 };
+
+/* Classic-script `const` is not a window property — expose like Store/Theme. */
+if (typeof window !== 'undefined') window.Utils = Utils;

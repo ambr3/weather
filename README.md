@@ -6,7 +6,7 @@ Type in a town and it shows you what's happening there today and hour by hour.
 
 ## Features
 
-- Version 0.7.12
+- Version 0.7.17
 - Today's weather, plus an hour-by-hour outlook
 - Search for any town by name, or let it use your location if you'd rather not
   type
@@ -14,9 +14,8 @@ Type in a town and it shows you what's happening there today and hour by hour.
   still works
 - Add it to your home screen and it opens like a normal app, with no browser
   bar in the way, and works with no signal
-- Remembers the last town you looked up, on your device only, for up to 3 days.
-  A "Remember" switch in settings turns this off and clears it. Clearing your
-  browser data removes it too
+- Remembers the last town you looked up, on your device only, for 3 days after
+  you last used it. Clearing your browser data removes it too
 - No sign-up, no adverts, and nothing that follows you around
 
 ## Usage
