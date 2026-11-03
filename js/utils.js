@@ -57,18 +57,24 @@ const Utils = {
 
   // Wall-clock ISO string → epoch, in the given IANA timezone.
   // Falls back to the device-local parse when tz is missing.
+  // Iterate offset so spring-forward mornings land on the right instant.
   parseLocal(iso, tz) {
     const d = new Date(iso);
     if (!tz || isNaN(d)) return d;
     if (/Z$|[+-]\d\d:\d\d$/.test(iso)) return d;
     const asUTC = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds());
-    let offsetMs;
+    let guess = asUTC;
     try {
-      offsetMs = this.tzOffsetMs(tz, asUTC);
+      for (let i = 0; i < 3; i++) {
+        const offsetMs = this.tzOffsetMs(tz, guess);
+        const next = asUTC - offsetMs;
+        if (next === guess) break;
+        guess = next;
+      }
+      return new Date(guess);
     } catch {
       return d;
     }
-    return new Date(asUTC - offsetMs);
   },
 
   // tz offset in ms at a given epoch (UTC fields of the tz-local wall-clock
@@ -128,7 +134,7 @@ const Utils = {
   },
 
   formatDuration(seconds) {
-    if (seconds == null) return '—';
+    if (seconds == null || !Number.isFinite(Number(seconds))) return '—';
     let h = Math.floor(seconds / 3600);
     let m = Math.round((seconds % 3600) / 60);
     if (m === 60) { h += 1; m = 0; }
@@ -428,6 +434,8 @@ const Utils = {
     if (!data.weather || typeof data.weather !== 'object' || Array.isArray(data.weather)) return null;
     if (data.lat != null && !Number.isFinite(Number(data.lat))) return null;
     if (data.lon != null && !Number.isFinite(Number(data.lon))) return null;
+    if (data.units != null && data.units !== 'metric' && data.units !== 'imperial') return null;
+    if (data.windUnit != null && ['kmh', 'mph', 'kn', 'ms'].indexOf(data.windUnit) < 0) return null;
     const savedAt = Number(data.savedAt);
     if (Number.isFinite(savedAt) && Date.now() - savedAt > this.WEATHER_CACHE_TTL_MS) return null;
     const w = data.weather;

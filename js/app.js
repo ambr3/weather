@@ -347,6 +347,12 @@ const App = {
     }
 
     if ('serviceWorker' in navigator) {
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
       navigator.serviceWorker.register('./sw.js').catch((e) => { console.debug('SW registration failed:', e); });
     }
 
@@ -602,6 +608,7 @@ const App = {
 
   async searchCity(city) {
     const searchId = ++this._searchSeq;
+    this._locSeq += 1; /* drop stale locate errors so they cannot wipe this search */
     UI.showLoading();
     try {
       const results = await API.searchCities(city);
@@ -646,6 +653,7 @@ const App = {
     lat = Math.round(lat * 100) / 100;
     lon = Math.round(lon * 100) / 100;
     this._userBusy++;
+    this._locSeq += 1; /* locate error must not wipe a newer successful load */
     const seq = ++this._weatherSeq;
     name = String(name || '').slice(0, 80);
     country = String(country || '').slice(0, 8);

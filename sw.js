@@ -1,8 +1,8 @@
 const CACHE_PREFIX = 'seclusaweather-';
-const VERSION = 'v0.7.19';
+const VERSION = 'v0.7.20';
 const CACHE_NAME = CACHE_PREFIX + VERSION;
-const ASSET_VER = '0.7.19';
-const NETWORK_TIMEOUT_MS = 4000;
+const ASSET_VER = '0.7.20';
+const NETWORK_TIMEOUT_MS = 8000;
 
 function withTimeout(promise, ms) {
   let timer;
@@ -150,7 +150,7 @@ self.addEventListener('fetch', (event) => {
           const stampOnly = u.search === '' || /^\?v=[0-9][\d.]*$/.test(u.search);
           if (response && response.status === 200 && u.origin === self.location.origin && stampOnly) {
             const clone = response.clone();
-            ownCache().then((cache) => cache.put(request, clone)).catch(() => {});
+            event.waitUntil(ownCache().then((cache) => cache.put(request, clone)).catch(() => {}));
           }
         } catch { /* ignore bad URLs */ }
         return response;

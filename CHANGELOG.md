@@ -4,6 +4,14 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
+## 0.7.20 — 2026-11-03
+
+- Theme menu stays on-screen in mobile portrait (no longer clipped off the left edge).
+- Locate errors no longer wipe a newer successful search/load.
+- Local time parse refined across DST spring-forward mornings.
+- Service worker: wait for asset cache writes; slightly longer network timeout; reload on controller change.
+- Weather-cache unit fields validated; duration formatter rejects non-finite values.
+
 ## 0.7.19 — 2026-11-03
 
 - Orange lines sky fills the page again (opaque body no longer covers `body::before`); line/wash strength kept quiet now that the full page paints.
