@@ -2,7 +2,7 @@
   "name": "Seclusa Weather",
   "short_name": "Seclusa Weather",
   "lang": "en",
-  "version": "0.7.21",
+  "version": "0.7.22",
   "description": "No tracking. No ads. No cookies.",
   "start_url": "./",
   "scope": "./",

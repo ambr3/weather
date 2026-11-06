@@ -4,6 +4,13 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
+## 0.7.22 — 2026-11-06
+
+- Orange ruled lines faded further (shared theme).
+- Hourly forecast keeps only the hours near the screen in the page.
+- Solid background colours are defined once, in the shared theme.
+- The opening “search for a city” line is no longer shown as an error.
+
 ## 0.7.21 — 2026-11-03
 
 - Theme sky palette: teal, orange, and purple swatches (2×6 grid with lines / black / white / custom).

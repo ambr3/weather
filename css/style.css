@@ -885,6 +885,11 @@ body {
   font-weight: 500;
 }
 
+.error-message--quiet {
+  background: var(--color-card);
+  border-color: var(--color-card-border);
+}
+
 /* Offline Notice */
 .offline-notice {
   display: flex;
@@ -917,35 +922,23 @@ body {
 html {
   --shell-bg: var(--surface, var(--color-bg-start));
   --shell-shadow: var(--shadow), 0 14px 36px -14px rgba(0, 0, 0, 0.35);
-  --grid-line: rgba(196, 94, 18, 0.14);
-  --grid-wash: rgba(196, 94, 18, 0.06);
+  --grid-line: color-mix(in srgb, var(--warm) 7%, transparent);
+  --grid-wash: color-mix(in srgb, var(--warm) 5%, transparent);
   --bg-solid: var(--color-bg-start);
 }
 
 html[data-theme="light"] {
-  --grid-line: rgba(196, 94, 18, 0.16);
-  --grid-wash: rgba(196, 94, 18, 0.14);
+  --grid-line: color-mix(in srgb, var(--warm) 7%, transparent);
+  --grid-wash: color-mix(in srgb, var(--warm) 5%, transparent);
 }
 
 html[data-theme="dark"] {
-  /* Quieter than pre-fix values — full-page paint made 0.22/0.3 look loud again. */
-  --grid-line: rgba(232, 140, 70, 0.16);
-  --grid-wash: rgba(196, 94, 18, 0.14);
+  /* These beat seclusa-base.css on specificity, so the shared fade has to be repeated here. */
+  --grid-line: color-mix(in srgb, var(--warm) 9%, transparent);
+  --grid-wash: color-mix(in srgb, var(--warm) 6%, transparent);
 }
 
-/* Solid colour fills (no lines). */
-html[data-bg="blue"] { --bg-solid: #3b82f6; }
-html[data-bg="lightblue"] { --bg-solid: #7dd3fc; }
-html[data-bg="teal"] { --bg-solid: #14b8a6; }
-html[data-bg="green"] { --bg-solid: #22c55e; }
-html[data-bg="yellow"] { --bg-solid: #facc15; }
-html[data-bg="orange"] { --bg-solid: #f97316; }
-html[data-bg="red"] { --bg-solid: #ef4444; }
-html[data-bg="purple"] { --bg-solid: #a855f7; }
-html[data-bg="black"] { --bg-solid: #0a0a0a; }
-html[data-bg="white"] { --bg-solid: #ffffff; }
-html[data-bg="custom"] { --bg-solid: var(--bg-custom, #5faff0); }
-
+/* Palette lives in seclusa-base.css. Weather only points its own token at it. */
 html[data-bg="blue"],
 html[data-bg="lightblue"],
 html[data-bg="teal"],
@@ -958,21 +951,6 @@ html[data-bg="black"],
 html[data-bg="white"],
 html[data-bg="custom"] {
   --color-bg-start: var(--bg-solid);
-  background-color: var(--bg-solid);
-}
-
-html[data-bg="blue"] body,
-html[data-bg="lightblue"] body,
-html[data-bg="teal"] body,
-html[data-bg="green"] body,
-html[data-bg="yellow"] body,
-html[data-bg="orange"] body,
-html[data-bg="red"] body,
-html[data-bg="purple"] body,
-html[data-bg="black"] body,
-html[data-bg="white"] body,
-html[data-bg="custom"] body {
-  background-color: var(--bg-solid);
 }
 
 /*
@@ -2260,6 +2238,22 @@ html[data-theme="dark"] body::after {
   scroll-snap-type: x proximity;
   scrollbar-width: none;
   padding: 0.55rem 0.45rem 0.6rem;
+}
+
+.hourly-strip__win {
+  display: flex;
+  align-items: stretch;
+  flex: 0 0 auto;
+  gap: inherit;
+  min-height: 100%;
+}
+
+.hourly-measure {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .hourly-strip::-webkit-scrollbar {

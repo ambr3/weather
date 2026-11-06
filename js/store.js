@@ -1,8 +1,8 @@
 /*
  * Seclusa app — local storage.
  *
- * Everything the app knows lives on this device. There is no account, no
- * server and no network call anywhere in this file or in the app that uses it.
+ * Everything this file stores lives on this device. There is no account and
+ * no server. This file itself makes no network calls.
  *
  * STORAGE CAN BE BLOCKED, AND NOTHING BREAKS
  *

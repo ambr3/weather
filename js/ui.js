@@ -137,6 +137,8 @@ const UI = {
     if (arc) arc.innerHTML = '';
     const el = this.$('errorMessage');
     el.textContent = msg;
+    el.classList.remove('error-message--quiet');
+    el.setAttribute('role', 'alert');
     el.classList.remove('hidden');
   },
 
@@ -153,6 +155,8 @@ const UI = {
     if (arc) arc.innerHTML = '';
     const el = this.$('errorMessage');
     el.textContent = 'Search for a city or use your location to see the forecast.';
+    el.classList.add('error-message--quiet');
+    el.setAttribute('role', 'status');
     el.classList.remove('hidden');
   },
 

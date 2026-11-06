@@ -43,17 +43,21 @@ const API = {
 
   async getWeather(lat, lon, units, windUnit) {
     if (!this._validCoords(lat, lon)) throw new Error('Invalid location coordinates.');
+    const la = Number(lat);
+    const lo = Number(lon);
     const tempUnit = units === 'imperial' ? 'fahrenheit' : 'celsius';
     const precipUnit = units === 'imperial' ? 'inch' : 'mm';
+    const winds = ['kmh', 'mph', 'kn', 'ms'];
+    const wind = winds.includes(windUnit) ? windUnit : CONFIG.DEFAULT_WIND_UNIT;
     const days = 14;
     const params = [
-      `latitude=${lat}`,
-      `longitude=${lon}`,
+      `latitude=${la}`,
+      `longitude=${lo}`,
       `current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,is_day,surface_pressure,pressure_msl,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,precipitation,snowfall,visibility,dew_point_2m,cape`,
       `hourly=temperature_2m,apparent_temperature,dew_point_2m,weather_code,precipitation_probability,precipitation,snowfall,wind_speed_10m,wind_direction_10m,wind_gusts_10m,relative_humidity_2m,cloud_cover,visibility,pressure_msl,cape,shortwave_radiation,is_day`,
       `daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,moonrise,moonset,moon_phase,precipitation_sum,rain_sum,snowfall_sum,precipitation_hours,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,uv_index_max,uv_index_clear_sky_max,sunshine_duration,daylight_duration,shortwave_radiation_sum`,
       `temperature_unit=${tempUnit}`,
-      `wind_speed_unit=${windUnit || CONFIG.DEFAULT_WIND_UNIT}`,
+      `wind_speed_unit=${wind}`,
       `precipitation_unit=${precipUnit}`,
       `forecast_days=${days}`,
       `timezone=auto`,
@@ -63,9 +67,11 @@ const API = {
 
   async getAirQuality(lat, lon) {
     if (!this._validCoords(lat, lon)) throw new Error('Invalid location coordinates.');
+    const la = Number(lat);
+    const lo = Number(lon);
     const params = [
-      `latitude=${lat}`,
-      `longitude=${lon}`,
+      `latitude=${la}`,
+      `longitude=${lo}`,
       `current=european_aqi,us_aqi,pm10,pm2_5,nitrogen_dioxide,sulphur_dioxide,ozone,carbon_monoxide,alder_pollen,birch_pollen,grass_pollen,mugwort_pollen,olive_pollen,ragweed_pollen`,
       `timezone=auto`,
     ];

@@ -198,17 +198,26 @@ Object.assign(UI, {
       `;
     };
 
-    const parts = [];
+    const items = [];
     dayGroups.forEach((g, dayIdx) => {
       if (dayIdx > 0) {
-        parts.push(`
+        items.push({
+          kind: 'day',
+          dayIdx,
+          html: `
           <button type="button" class="hourly-strip__day" data-day="${dayIdx}"
                   aria-label="${this._esc(`Jump to ${dayLabelFor(g.key)}`)}">
             <span class="hourly-strip__day-label">${this._esc(dayLabelFor(g.key))}</span>
-          </button>`);
+          </button>`,
+        });
       }
-      g.indices.forEach((idx) => parts.push(hourFor(idx)));
+      g.indices.forEach((idx) => {
+        const modalI = idx - listStart;
+        items.push({ kind: 'hour', dayIdx, modalI, html: hourFor(idx) });
+      });
     });
+    this._hourlyDayGroups = dayGroups;
+    this._layoutHourly(items);
 
     const multiDay = dayGroups.length > 1;
     const tabs = multiDay
@@ -222,7 +231,7 @@ Object.assign(UI, {
     this.$('hourlyScroll').innerHTML = `
       <div class="hourly-card forecast-card">
         <div class="hourly-strip" role="list" aria-label="Hourly forecast from now">
-          ${parts.join('')}
+          <div class="hourly-strip__win"></div>
         </div>
         ${multiDay ? `
         <div class="hourly-strip__pager forecast-card__pager forecast-card__pager--stack" role="tablist" aria-label="Hourly days">
@@ -244,37 +253,105 @@ Object.assign(UI, {
 
     const stripEl = this.$('hourlyScroll').querySelector('.hourly-strip');
     const pagerEl = this.$('hourlyScroll').querySelector('.hourly-strip__pager');
+    this._paintHourlyWindow();
     if (stripEl && multiDay && pagerEl) {
       this._bindHourlyDayNav(stripEl, pagerEl, dayGroups);
+    } else if (stripEl) {
+      stripEl.addEventListener('scroll', () => this._paintHourlyWindow(), { passive: true });
     }
 
     if (!this._hourlyModalBound) this._bindHourlyModal();
   },
 
+  _hourlyPieceWidth(html) {
+    if (!this._hourlyProbe) {
+      const probe = document.createElement('div');
+      probe.className = 'hourly-strip hourly-measure';
+      probe.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(probe);
+      this._hourlyProbe = probe;
+    }
+    this._hourlyProbe.innerHTML = html;
+    const el = this._hourlyProbe.firstElementChild;
+    const w = el ? el.getBoundingClientRect().width : 0;
+    this._hourlyProbe.innerHTML = '';
+    return w;
+  },
+
+  _layoutHourly(items) {
+    let hourW = 0;
+    const dayW = new Map();
+    items.forEach((item) => {
+      if (item.kind === 'hour') {
+        if (!hourW) hourW = this._hourlyPieceWidth(item.html);
+        item.width = hourW || 58;
+      } else {
+        if (!dayW.has(item.dayIdx)) dayW.set(item.dayIdx, this._hourlyPieceWidth(item.html));
+        item.width = dayW.get(item.dayIdx) || 24;
+      }
+    });
+    const gap = this._hourlyProbe
+      ? (parseFloat(getComputedStyle(this._hourlyProbe).columnGap) || 0)
+      : 0;
+    let offset = 0;
+    items.forEach((item, i) => {
+      item.offset = offset;
+      offset += item.width;
+      if (i < items.length - 1) offset += gap;
+    });
+    this._hourlyLayout = items;
+    this._hourlySpan = offset;
+    this._hourlyRange = '';
+  },
+
+  _hourlyDayOffset(dayIdx) {
+    const g = this._hourlyDayGroups && this._hourlyDayGroups[dayIdx];
+    if (!g || !g.indices.length || !this._hourlyLayout) return null;
+    const modalI = g.indices[0] - this._hourlyStart;
+    const item = this._hourlyLayout.find((it) => it.kind === 'hour' && it.modalI === modalI);
+    return item ? item.offset : null;
+  },
+
+  _paintHourlyWindow() {
+    const layout = this._hourlyLayout;
+    const strip = this.$('hourlyScroll') && this.$('hourlyScroll').querySelector('.hourly-strip');
+    const win = strip && strip.querySelector('.hourly-strip__win');
+    if (!layout || !layout.length || !win) return;
+    const view = strip.clientWidth || 360;
+    const left = strip.scrollLeft;
+    const from = left - view;
+    const to = left + view * 2;
+    let a = 0;
+    while (a < layout.length && layout[a].offset + layout[a].width < from) a += 1;
+    let b = a;
+    while (b < layout.length && layout[b].offset < to) b += 1;
+    if (b === a) b = Math.min(layout.length, a + 1);
+    const key = `${a}:${b}`;
+    if (key === this._hourlyRange) return;
+    this._hourlyRange = key;
+    const last = layout[b - 1];
+    const padL = layout[a].offset;
+    const padR = Math.max(0, this._hourlySpan - (last.offset + last.width));
+    Utils.dynCSS.set('hourly-win', `.hourly-strip__win{padding-left:${padL}px;padding-right:${padR}px}`);
+    win.innerHTML = layout.slice(a, b).map((item) => item.html).join('');
+  },
+
   _bindHourlyDayNav(stripEl, pagerEl, dayGroups) {
     const tabs = pagerEl.querySelectorAll('.hourly-strip__tab');
 
-    const hourAnchor = (dayIdx) => {
-      const g = dayGroups[dayIdx];
-      if (!g || !g.indices.length) return null;
-      const modalI = g.indices[0] - this._hourlyStart;
-      return stripEl.querySelector(`.hourly-strip__hour[data-i="${modalI}"]`);
-    };
-
     const scrollToDay = (dayIdx) => {
-      const el = hourAnchor(dayIdx);
-      if (!el) return;
-      const left = el.offsetLeft - 8;
-      stripEl.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
+      const left = this._hourlyDayOffset(dayIdx);
+      if (left == null) return;
+      stripEl.scrollTo({ left: Math.max(0, left - 8), behavior: 'smooth' });
     };
 
     const activeDayFromScroll = () => {
       const x = stripEl.scrollLeft + 12;
       let active = 0;
       for (let i = 0; i < dayGroups.length; i++) {
-        const el = hourAnchor(i);
-        if (!el) continue;
-        if (el.offsetLeft <= x) active = i;
+        const off = this._hourlyDayOffset(i);
+        if (off == null) continue;
+        if (off <= x) active = i;
         else break;
       }
       return active;
@@ -289,7 +366,16 @@ Object.assign(UI, {
       });
     };
 
-    stripEl.addEventListener('scroll', syncTabs, { passive: true });
+    let paintQueued = false;
+    stripEl.addEventListener('scroll', () => {
+      if (paintQueued) return;
+      paintQueued = true;
+      requestAnimationFrame(() => {
+        paintQueued = false;
+        this._paintHourlyWindow();
+        syncTabs();
+      });
+    }, { passive: true });
     pagerEl.addEventListener('click', (e) => {
       const tab = e.target.closest('.hourly-strip__tab');
       if (!tab) return;
@@ -305,7 +391,10 @@ Object.assign(UI, {
   },
 
   _updateHourlyScroll() {
-    // Strip scrolls horizontally; no equal-height page sync.
     Utils.dynCSS.del('hourly-h');
+    if (!this._hourlyLayout) return;
+    this._layoutHourly(this._hourlyLayout);
+    this._hourlyRange = '';
+    this._paintHourlyWindow();
   },
 });
