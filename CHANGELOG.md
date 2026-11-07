@@ -4,6 +4,10 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
+## 0.7.23 — 2026-11-07
+
+- Theme colour swatches spread across the menu instead of leaving a gap on the right.
+
 ## 0.7.22 — 2026-11-06
 
 - Orange ruled lines faded further (shared theme).
