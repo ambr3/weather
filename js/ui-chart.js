@@ -31,22 +31,14 @@ Object.assign(UI, {
     const slice = (key) => hourly[key] ? hourly[key].slice(startIdx, startIdx + count) : null;
 
     const pops = slice('precipitation_probability');
-    const precipSlice = slice('precipitation');
-    const snowSlice = slice('snowfall');
 
     let cfg;
     if (mode === 'rain') {
       if (!pops) { empty(); return; }
-      // Same gate as hourly list: probability alone is noise when amount is 0.
-      const gated = pops.map((p, i) => {
-        if (p == null || p <= 0) return 0;
-        const r = precipSlice && precipSlice[i] != null ? precipSlice[i] : 0;
-        const s = snowSlice && snowSlice[i] != null ? snowSlice[i] : 0;
-        return (r > 0 || s > 0) ? p : 0;
-      });
       cfg = {
         min: 0, max: 100, suffix: '%',
-        values: gated, color: '#38BDF8', cells: true,
+        values: pops.map((p) => (p == null || !Number.isFinite(Number(p)) ? null : Number(p))),
+        color: '#38BDF8', cells: true,
         legend: [{ label: 'chance of rain', swatch: 'rain' }],
       };
     } else if (mode === 'solar') {
@@ -61,10 +53,16 @@ Object.assign(UI, {
     } else {
       const vals = slice('temperature_2m');
       if (!vals) { empty(); return; }
+      const dew = slice('dew_point_2m') || [];
+      const cur = this._current;
+      if (cur && vals.length) {
+        if (cur.temperature_2m != null) vals[0] = cur.temperature_2m;
+        if (dew.length && cur.dew_point_2m != null) dew[0] = cur.dew_point_2m;
+      }
       const suffix = units === 'imperial' ? '°F' : '°C';
       cfg = {
         values: vals, suffix: '°', tempGrad: true,
-        second: slice('dew_point_2m') || [],
+        second: dew,
         legend: [
           { label: `Temperature (${suffix})`, swatch: 'temp' },
           { label: `Dew point (${suffix})`, swatch: 'dew' },

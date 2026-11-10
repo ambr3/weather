@@ -35,7 +35,7 @@ Object.assign(UI, {
     const conditions = [
       { label: 'Precip', icon: this._metricIcon('precip'), value: precipNow, sub: precipSub.length ? precipSub.join(' · ') : 'Dry today' },
       { label: 'Humidity', icon: this._metricIcon('humidity'), value: humidity != null ? `${humidity}%` : '—', sub: `Dew point ${dewPoint}` },
-      { label: 'UV Index', icon: this._metricIcon('uv'), value: uv != null ? `<span class="uv-badge tone-${uvInfo.tone}">${Math.round(uv)}</span>` : '—', sub: uv != null ? `${uvInfo.label}${uvClear != null ? ` · clear sky ${Math.round(uvClear)}` : ''}` : 'Not available' },
+      { label: 'UV today', icon: this._metricIcon('uv'), value: uv != null ? `<span class="uv-badge tone-${uvInfo.tone}">${Math.round(uv)}</span>` : '—', sub: uv != null ? `Day's high · ${uvInfo.label}${uvClear != null ? ` · clear sky ${Math.round(uvClear)}` : ''}` : 'Not available' },
       { label: 'Visibility', icon: this._metricIcon('visibility'), value: Utils.formatVisibility(c.visibility, UI.visUnit), sub: 'Current visibility' },
       { label: 'Pressure', icon: this._metricIcon('pressure'), value: pressureMsl != null ? Utils.formatPressure(pressureMsl, UI.pressUnit) : pressure != null ? Utils.formatPressure(pressure, UI.pressUnit) : '—', sub: pressureMsl != null && pressure != null ? `MSL ${Utils.formatPressure(pressureMsl, UI.pressUnit)} · Surface ${Utils.formatPressure(pressure, UI.pressUnit)}` : 'Atmospheric pressure · tap to toggle', id: 'pressureBox' },
     ];
@@ -259,70 +259,52 @@ Object.assign(UI, {
     if (windSec) windSec.classList.add('hidden');
   },
 
-  // Max precipitation probability across daytime hours (is_day === 1) for a date.
+  // Highest chance across every hour of a date, including night.
   daytimeMaxPop(dateStr, hourly) {
-    if (!hourly || !hourly.time || !hourly.precipitation_probability || !hourly.is_day) return null;
+    if (!hourly || !hourly.time || !hourly.precipitation_probability) return null;
     const prefix = dateStr + 'T';
     let max = null;
     for (let k = 0; k < hourly.time.length; k++) {
       if (!String(hourly.time[k] || '').startsWith(prefix)) continue;
-      if (hourly.is_day[k] !== 1) continue;
       const p = hourly.precipitation_probability[k];
       if (p != null && (max == null || p > max)) max = p;
     }
     return max;
   },
 
-  // Rain chance that should actually be advertised for a day. A nonzero max
-  // hourly probability alone is too noisy on clear days (open-meteo can report
-  // e.g. 60% while rain_sum stays 0.0), so it only surfaces when the forecast
-  // actually includes precipitation. Mirrors the icon logic in
-  // WeatherIcons.dailyIcon.
+  // The day's rain chance is Open-Meteo's daily maximum, night hours included.
+  // Shown even when the rain total is 0. Falls back to the highest hour.
   meaningfulDayPop(dateStr, daily, hourly) {
     if (!daily || !daily.time) return null;
     const idx = daily.time.indexOf(String(dateStr));
     const dailyMax = idx >= 0 && daily.precipitation_probability_max
       ? daily.precipitation_probability_max[idx]
       : null;
-    const pop = this.daytimeMaxPop(dateStr, hourly) ?? dailyMax;
+    const pop = dailyMax != null ? dailyMax : this.daytimeMaxPop(dateStr, hourly);
     if (pop == null || pop <= 0) return null;
-    const pick = (key) => idx >= 0 && daily[key] && daily[key][idx] != null ? daily[key][idx] : 0;
-    if (pick('rain_sum') > 0 || pick('snowfall_sum') > 0 || pick('precipitation_sum') > 0) return pop;
-    return null;
+    return Math.round(pop);
   },
 
-  // Rain chance for the "Now" slot: the current hour's probability is only
-  // surfaced when precipitation is actually happening or expected this hour —
-  // the model often reports a large chance for the current hour while the sky
-  // stays clear and dry, which must never read as "X% rain now".
+  // Chance for the current hour. Current weather has no chance of its own,
+  // so this is that hour's forecast chance, including when the amount is 0.
   _meaningfulNowPop(cur, hourly, startIdx) {
     if (!cur) return null;
-    const prob = hourly && hourly.precipitation_probability
-      ? hourly.precipitation_probability[startIdx]
-      : null;
-    if (prob == null || prob <= 0) return null;
-    const hourPrecip = hourly && hourly.precipitation && hourly.precipitation[startIdx] != null ? hourly.precipitation[startIdx] : 0;
-    const hourSnow = hourly && hourly.snowfall && hourly.snowfall[startIdx] != null ? hourly.snowfall[startIdx] : 0;
-    const curPrecip = cur.precipitation != null ? cur.precipitation : 0;
-    const curSnow = cur.snowfall != null ? cur.snowfall : 0;
-    if (curPrecip > 0 || curSnow > 0 || hourPrecip > 0 || hourSnow > 0) return prob;
-    return null;
+    return this._meaningfulHourPop(hourly, startIdx);
   },
 
-  // Same gate for any hourly slot: probability alone is too noisy when the
-  // hour's precip/snow amounts are zero.
+  // That hour's chance, including when the rain or snow amount is 0.
   _meaningfulHourPop(hourly, idx) {
     if (!hourly || idx == null || idx < 0) return null;
     const prob = hourly.precipitation_probability ? hourly.precipitation_probability[idx] : null;
     if (prob == null || prob <= 0) return null;
-    const precip = hourly.precipitation && hourly.precipitation[idx] != null ? hourly.precipitation[idx] : 0;
-    const snow = hourly.snowfall && hourly.snowfall[idx] != null ? hourly.snowfall[idx] : 0;
-    if (precip > 0 || snow > 0) return prob;
-    return null;
+    return Math.round(prob);
   },
 
   // Unified day outlook (icon + rain %) — summary, forecast rows, and forecast
-  // modal all read from this so Open-Meteo daily/hourly never disagree.
+  // modal all read from this.
+  // Wet day: Open-Meteo's daily weather_code (not a rewritten sky).
+  // Dry day: the most common daylight sky, so one overcast hour does not
+  // rename a clear day. If any hour still has real precip, use that hour's code.
   dayOutlook(dateStr, daily, hourly, units) {
     if (!daily || !daily.time || dateStr == null) return null;
     const idx = daily.time.indexOf(String(dateStr));
@@ -330,9 +312,23 @@ Object.assign(UI, {
     const pop = this.meaningfulDayPop(dateStr, daily, hourly);
     const rainSum = daily.rain_sum && daily.rain_sum[idx] != null ? daily.rain_sum[idx] : 0;
     const snowSum = daily.snowfall_sum && daily.snowfall_sum[idx] != null ? daily.snowfall_sum[idx] : 0;
-    const raw = WeatherIcons.dominantDayCode(dateStr, hourly, pop ?? 0, rainSum, snowSum, units)
-      ?? daily.weather_code[idx];
-    let iconCode = WeatherIcons.dailyIcon(raw, pop ?? 0, rainSum, snowSum, units);
+    const precipSum = daily.precipitation_sum && daily.precipitation_sum[idx] != null ? daily.precipitation_sum[idx] : 0;
+    const rawDaily = daily.weather_code ? daily.weather_code[idx] : null;
+    const wet = (g) => g === 'drizzle' || g === 'rain' || g === 'snow' || g === 'thunder';
+    const hasAmount = rainSum > 0 || snowSum > 0 || precipSum > 0;
+
+    let iconCode;
+    if (rawDaily != null && wet(WeatherIcons._group(rawDaily)) && hasAmount) {
+      iconCode = rawDaily;
+    } else {
+      const raw = WeatherIcons.dominantDayCode(dateStr, hourly, pop ?? 0, rainSum, snowSum, units)
+        ?? rawDaily;
+      iconCode = WeatherIcons.dailyIcon(raw, pop ?? 0, rainSum, snowSum, units);
+    }
+    if (!wet(WeatherIcons._group(iconCode))) {
+      const lead = WeatherIcons.leadPrecipCode(dateStr, hourly);
+      if (lead != null) iconCode = lead;
+    }
 
     // Today while it's wet now: don't paint a dry day icon beside a wet summary.
     if (String(dateStr) === this._todayDateKey() && this._current) {
@@ -342,7 +338,6 @@ Object.assign(UI, {
       const nowIcon = WeatherIcons.hourIcon(
         c.weather_code, nowPop, c.precipitation ?? 0, c.snowfall ?? 0
       );
-      const wet = (g) => g === 'drizzle' || g === 'rain' || g === 'snow' || g === 'thunder';
       if (wet(WeatherIcons._group(nowIcon)) && !wet(WeatherIcons._group(iconCode))) {
         iconCode = nowIcon;
       }

@@ -44,57 +44,43 @@ const WeatherIcons = {
     return 'clear';
   },
 
-  // Show a rain/snow icon when there is actual precipitation (or snow) with
-  // a meaningful chance — never upgrade clear/cloud icons on probability alone.
+  // A clear/cloud code with real precipitation should not stay a sun icon.
+  // Probability alone never changes the code. An existing precip code is kept
+  // as Open-Meteo sent it — drizzle is not renamed to rain.
   adjustForPrecip(code, pop, precip, snow) {
     const g = this._group(code);
-    const p = pop != null ? pop : 0;
     const r = precip != null ? precip : 0;
     const s = snow != null ? snow : 0;
-    // A drizzle-coded slot that actually carries rain (or a high chance of it)
-    // should read as rain, not drizzle — otherwise heavy showers keep the
-    // light-drizzle glyph.
-    if (g === 'drizzle') {
-      if (p >= 50 || (r > 0 && p >= 30) || (s > 0 && p >= 30) || r >= 1 || s >= 1) return 61;
-      return code;
-    }
-    if (g === 'rain' || g === 'snow' || g === 'thunder') return code;
-    if (s > 0 && p >= 30) return 71;
-    if (r > 0 && p >= 30) return 61;
+    if (g === 'rain' || g === 'snow' || g === 'thunder' || g === 'drizzle' || g === 'fog') return code;
+    if (s > 0) return 71;
+    if (r > 0) return 61;
     return code;
   },
 
-  // Hourly / current: never show a rain/snow icon when that slot has zero
-  // precip amount — Open-Meteo often keeps a wet WMO code with 0.0 mm, which
-  // would fight the day outlook and the gated rain %. Mirrors dailyIcon's
-  // "amount required" rule; thunder/fog keep their codes.
+  // Hourly / current: show that slot's Open-Meteo code. A wet code with 0.0 mm
+  // is overcast instead, so the strip doesn't say rain when nothing falls.
   hourIcon(code, pop, precip, snow) {
     const g = this._group(code);
     const rain = precip != null ? precip : 0;
     const sn = snow != null ? snow : 0;
     if ((g === 'rain' || g === 'drizzle' || g === 'snow') && rain <= 0 && sn <= 0) {
-      // Prefer overcast over "partly cloudy" when demoting a wet WMO code.
       return 3;
     }
+    if (g === 'rain' || g === 'drizzle' || g === 'snow' || g === 'thunder') return code;
     return this.adjustForPrecip(code, pop, rain, sn);
   },
 
-  // Daily forecast: the day's WMO code can be rain/drizzle even when only a
-  // brief spell occurred. Never show a precip icon unless the chance AND the
-  // amount justify it; otherwise fall back to a partly-cloudy look.
-  // rainSum is mm in metric, inches in imperial — thresholds are per-unit.
+  // Sky codes pass through. A precip code is kept when the day has a real
+  // amount, and dropped to partly cloudy when the amount is zero.
+  // rainSum is mm in metric, inches in imperial.
   dailyIcon(code, pop, rainSum, snowSum, units) {
     const g = this._group(code);
-    if (g === 'thunder' || g === 'fog' || g === 'clear' || g === 'clouds') return code;
-    const p = pop != null ? pop : 0;
+    if (g === 'thunder' || g === 'fog' || g === 'clear' || g === 'clearsome' || g === 'clouds' || g === 'overcast') return code;
     const rain = rainSum != null ? rainSum : 0;
     const snow = snowSum != null ? snowSum : 0;
-    const rainThresh = units === 'imperial' ? 0.04 : 1;
-    const hasSnow = snow > 0 && p >= 30;
-    const hasRain = rain >= rainThresh && p >= 30;
-    const highChance = p >= 50;
-    if (g === 'snow') return (hasSnow || highChance) ? 71 : 2;
-    if (g === 'rain' || g === 'drizzle') return (hasRain || highChance) ? 61 : 2;
+    const rainThresh = units === 'imperial' ? 0.01 : 0.1;
+    if (g === 'snow') return snow > 0 ? code : 2;
+    if (g === 'rain' || g === 'drizzle') return (rain >= rainThresh || snow > 0) ? code : 2;
     return code;
   },
 
@@ -135,6 +121,33 @@ const WeatherIcons = {
     if (hasPrecip && tiedPrecip.length) return this._groupRep[tiedPrecip[0]];
     const order = ['clear', 'clearsome', 'clouds', 'overcast', 'fog', 'drizzle', 'rain', 'snow', 'thunder'];
     return this._groupRep[order.find((g) => lead.includes(g))];
+  },
+
+  // Most common Open-Meteo code among hours that actually have rain or snow.
+  leadPrecipCode(dateStr, hourly) {
+    if (!hourly || !hourly.time || !hourly.weather_code) return null;
+    const prefix = dateStr + 'T';
+    const counts = new Map();
+    for (let k = 0; k < hourly.time.length; k++) {
+      if (!String(hourly.time[k] || '').startsWith(prefix)) continue;
+      const rain = hourly.precipitation && hourly.precipitation[k] != null ? hourly.precipitation[k] : 0;
+      const snow = hourly.snowfall && hourly.snowfall[k] != null ? hourly.snowfall[k] : 0;
+      if (rain <= 0 && snow <= 0) continue;
+      const wc = hourly.weather_code[k];
+      if (wc == null) continue;
+      const g = this._group(wc);
+      if (g !== 'drizzle' && g !== 'rain' && g !== 'snow' && g !== 'thunder') continue;
+      counts.set(wc, (counts.get(wc) || 0) + 1);
+    }
+    let best = null;
+    let n = 0;
+    counts.forEach((c, code) => {
+      if (c > n) {
+        n = c;
+        best = code;
+      }
+    });
+    return best;
   },
 
   _svg(body, viewBox = '0 0 64 64') {

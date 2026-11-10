@@ -1782,7 +1782,7 @@ html[data-theme="dark"] body::after {
 
   .hourly-strip__hour--now:hover {
     background: var(--color-card-hover);
-    box-shadow: inset 0 -3px 0 0 var(--color-accent);
+    box-shadow: none;
   }
 
   .conditions-item--press:hover {
@@ -2240,7 +2240,10 @@ html[data-theme="dark"] body::after {
   -webkit-overflow-scrolling: touch;
   scroll-snap-type: x proximity;
   scrollbar-width: none;
-  padding: 0.55rem 0.45rem 0.6rem;
+  /* Horizontal inset lives in the virtual layout + scroll-padding so snap
+     cannot pull the first/last hour under the card's overflow:hidden edge. */
+  padding: 0.55rem 0 0.6rem;
+  scroll-padding-inline: 0.45rem;
 }
 
 .hourly-strip__win {
@@ -2326,7 +2329,8 @@ html[data-theme="dark"] body::after {
 
 .hourly-strip__hour--now {
   background: var(--color-chip-bg);
-  box-shadow: inset 0 -3px 0 0 var(--color-accent);
+  /* No bottom accent: inset box-shadow + radius read as a smiley. */
+  box-shadow: none;
 }
 
 .hourly-strip__hour--now .hourly-strip__time {
@@ -2429,7 +2433,8 @@ html[data-theme="dark"] body::after {
 
 @media (min-width: 640px) {
   .hourly-strip {
-    padding: 0.65rem 0.55rem 0.7rem;
+    padding: 0.65rem 0 0.7rem;
+    scroll-padding-inline: 0.55rem;
     gap: 0.15rem;
   }
 

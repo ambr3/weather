@@ -4,6 +4,14 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
+## 0.8.0 — 2026-11-10
+
+- Day and hour conditions keep Open-Meteo's own weather codes when rain or snow is real; drizzle is not renamed to rain.
+- Rain chance is shown as Open-Meteo's daily or hourly figure, including days with no rain total.
+- UV next to current weather is this hour; the day's high is labeled separately.
+- Temperature graph starts from the live reading.
+- Now-hour chip no longer uses a curved inset accent (looked like a smile); hourly strip inset no longer clips at the card edge.
+
 ## 0.7.23 — 2026-11-07
 
 - Theme colour swatches spread across the menu instead of leaving a gap on the right.

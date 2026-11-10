@@ -278,6 +278,13 @@ Object.assign(UI, {
     return w;
   },
 
+  _hourlyEdgePad(strip) {
+    const el = strip || (this.$('hourlyScroll') && this.$('hourlyScroll').querySelector('.hourly-strip'));
+    if (!el) return 8;
+    const pad = parseFloat(getComputedStyle(el).scrollPaddingInlineStart);
+    return Number.isFinite(pad) && pad > 0 ? pad : 8;
+  },
+
   _layoutHourly(items) {
     let hourW = 0;
     const dayW = new Map();
@@ -293,14 +300,15 @@ Object.assign(UI, {
     const gap = this._hourlyProbe
       ? (parseFloat(getComputedStyle(this._hourlyProbe).columnGap) || 0)
       : 0;
-    let offset = 0;
+    const edge = this._hourlyEdgePad();
+    let offset = edge;
     items.forEach((item, i) => {
       item.offset = offset;
       offset += item.width;
       if (i < items.length - 1) offset += gap;
     });
     this._hourlyLayout = items;
-    this._hourlySpan = offset;
+    this._hourlySpan = offset + edge;
     this._hourlyRange = '';
   },
 
@@ -342,7 +350,8 @@ Object.assign(UI, {
     const scrollToDay = (dayIdx) => {
       const left = this._hourlyDayOffset(dayIdx);
       if (left == null) return;
-      stripEl.scrollTo({ left: Math.max(0, left - 8), behavior: 'smooth' });
+      const edge = this._hourlyEdgePad(stripEl);
+      stripEl.scrollTo({ left: Math.max(0, left - edge), behavior: 'smooth' });
     };
 
     const activeDayFromScroll = () => {

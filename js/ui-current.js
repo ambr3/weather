@@ -8,6 +8,7 @@ Object.assign(UI, {
     const todayKey = (d.time && d.time[0]) ? d.time[0] : this._todayDateKey();
     const outlook = this.dayOutlook(todayKey, d, data.hourly, units);
     const dayPop = outlook ? outlook.pop : null;
+    const uvNow = data.hourly && data.hourly.uv_index ? data.hourly.uv_index[nowStartIdx] : null;
     const iconCode = WeatherIcons.hourIcon(c.weather_code, nowPop, c.precipitation ?? 0, c.snowfall ?? 0);
     const temp = Utils.formatTemp(c.temperature_2m, units);
     const feels = Utils.formatTemp(c.apparent_temperature, units);
@@ -87,7 +88,7 @@ Object.assign(UI, {
         ${c.visibility != null ? `<span class="current-weather__extra-item"><span class="current-weather__extra-label">Visibility</span><span class="current-weather__extra-value">${this._esc(Utils.formatVisibility(c.visibility, UI.visUnit))}</span></span>` : ''}
         ${c.pressure_msl != null ? `<span class="current-weather__extra-item"><span class="current-weather__extra-label">Pressure</span><span class="current-weather__extra-value">${this._esc(Utils.formatPressure(c.pressure_msl, UI.pressUnit))}</span></span>` : ''}
         ${c.dew_point_2m != null ? `<span class="current-weather__extra-item"><span class="current-weather__extra-label">Dew point</span><span class="current-weather__extra-value">${this._esc(Utils.formatTemp(c.dew_point_2m, units))}</span></span>` : ''}
-        ${d.uv_index_max && d.uv_index_max[0] != null ? `<span class="current-weather__extra-item"><span class="current-weather__extra-label">UV</span><span class="current-weather__extra-value">${Math.round(d.uv_index_max[0])}</span></span>` : ''}
+        ${uvNow != null ? `<span class="current-weather__extra-item"><span class="current-weather__extra-label">UV</span><span class="current-weather__extra-value">${Math.round(uvNow)}</span></span>` : ''}
         ${c.cloud_cover != null ? `<span class="current-weather__extra-item"><span class="current-weather__extra-label">Cloud</span><span class="current-weather__extra-value">${Math.round(c.cloud_cover)}%</span></span>` : ''}
       </div>
     `;
@@ -130,7 +131,7 @@ Object.assign(UI, {
       row('Now', sunStatus),
       row('Daylight', daylight),
       row('Sunshine', sunshine),
-      row('UV', uvLabel),
+      row('UV high', uvLabel),
       row('Solar', solarSum),
     ].join(''), 'sun');
     const moonPanel = panel('Moon', [
