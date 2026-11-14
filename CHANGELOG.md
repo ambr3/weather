@@ -4,7 +4,12 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
+## 0.8.1 — 2026-11-14
+
+- iPhone/iPad home-screen status bar is solid black instead of see-through (stops the top blur).
+
 ## 0.8.0 — 2026-11-10
+
 
 - Day and hour conditions keep Open-Meteo's own weather codes when rain or snow is real; drizzle is not renamed to rain.
 - Rain chance is shown as Open-Meteo's daily or hourly figure, including days with no rain total.
