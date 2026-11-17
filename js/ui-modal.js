@@ -449,10 +449,11 @@ Object.assign(UI, {
     const date = d.time[modalIndex];
     if (date == null) return '';
     const units = this._forecastUnits || 'metric';
-    const high = d.temperature_2m_max && d.temperature_2m_max[modalIndex] != null ? Utils.formatTemp(d.temperature_2m_max[modalIndex], units) : '—';
-    const low = d.temperature_2m_min && d.temperature_2m_min[modalIndex] != null ? Utils.formatTemp(d.temperature_2m_min[modalIndex], units) : '—';
-    const feelsHigh = d.apparent_temperature_max && d.apparent_temperature_max[modalIndex] != null ? Utils.formatTemp(d.apparent_temperature_max[modalIndex], units) : null;
-    const feelsLow = d.apparent_temperature_min && d.apparent_temperature_min[modalIndex] != null ? Utils.formatTemp(d.apparent_temperature_min[modalIndex], units) : null;
+    const pair = Utils.dayNightTemps(d, this._forecastHourly, modalIndex, this._tz);
+    const high = pair.high != null ? Utils.formatTemp(pair.high, units) : '—';
+    const low = pair.low != null ? Utils.formatTemp(pair.low, units) : '—';
+    const feelsHigh = pair.feelsHigh != null ? Utils.formatTemp(pair.feelsHigh, units) : null;
+    const feelsLow = pair.feelsLow != null ? Utils.formatTemp(pair.feelsLow, units) : null;
     const outlook = this.dayOutlook(date, d, this._forecastHourly, units);
     const pop = outlook && outlook.pop != null ? outlook.pop : 0;
     const rainSum = outlook ? outlook.rainSum : (d.rain_sum ? d.rain_sum[modalIndex] : null);
@@ -461,7 +462,7 @@ Object.assign(UI, {
     const daylight = d.daylight_duration && d.daylight_duration[modalIndex] != null ? Utils.formatDuration(d.daylight_duration[modalIndex]) : null;
     const sunrise = d.sunrise && d.sunrise[modalIndex] ? Utils.formatTime(d.sunrise[modalIndex], this._tz) : null;
     const sunset = d.sunset && d.sunset[modalIndex] ? Utils.formatTime(d.sunset[modalIndex], this._tz) : null;
-    const tempMaxRaw = d.temperature_2m_max && d.temperature_2m_max[modalIndex];
+    const tempMaxRaw = pair.high;
     const tempTone = tempMaxRaw != null ? Utils.getTempTone(tempMaxRaw, units) : null;
     const iconCode = outlook
       ? outlook.iconCode
@@ -470,7 +471,7 @@ Object.assign(UI, {
         pop, rainSum ?? 0, snowSum ?? 0, units
       );
     const desc = Utils.getWeatherDescription(iconCode);
-    const feelsHighRaw = d.apparent_temperature_max && d.apparent_temperature_max[modalIndex];
+    const feelsHighRaw = pair.feelsHigh;
     const feelsVal = feelsHigh != null && feelsLow != null
       ? (feelsHighRaw != null
           ? `<span class="temp-tone-${Utils.getTempTone(feelsHighRaw, units)}">${this._esc(feelsHigh)} / ${this._esc(feelsLow)}</span>`

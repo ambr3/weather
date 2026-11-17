@@ -10,8 +10,9 @@ Object.assign(UI, {
     this._forecastHourly = hourly;
 
     const rowMarkup = (date, i) => {
-      const max = daily.temperature_2m_max && daily.temperature_2m_max[i] != null ? Math.round(daily.temperature_2m_max[i]) : '—';
-      const min = daily.temperature_2m_min && daily.temperature_2m_min[i] != null ? Math.round(daily.temperature_2m_min[i]) : '—';
+      const pair = Utils.dayNightTemps(daily, hourly, i, this._tz);
+      const max = pair.high != null ? Math.round(pair.high) : '—';
+      const min = pair.low != null ? Math.round(pair.low) : '—';
       const outlook = this.dayOutlook(date, daily, hourly, units);
       const pop = outlook && outlook.pop != null ? outlook.pop : 0;
       const iconCode = outlook ? outlook.iconCode : (daily.weather_code ? daily.weather_code[i] : 0);

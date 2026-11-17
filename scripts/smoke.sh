@@ -154,6 +154,79 @@ const tokyoClocks = Utils.getClockChanges('Asia/Tokyo', 2026);
 if (!tokyoClocks || tokyoClocks.observes) {
   console.error('Tokyo should not observe DST', tokyoClocks); process.exit(1);
 }
+if (Utils.nextDateKey('2026-11-17') !== '2026-11-18') {
+  console.error('nextDateKey failed', Utils.nextDateKey('2026-11-17')); process.exit(1);
+}
+// Coming overnight low (not calendar-day morning min).
+const pairDaily = {
+  time: ['2026-11-17', '2026-11-18'],
+  sunrise: ['2026-11-17T07:00', '2026-11-18T07:00'],
+  sunset: ['2026-11-17T17:00', '2026-11-18T17:00'],
+  temperature_2m_max: [20, 18],
+  temperature_2m_min: [2, 5], // calendar mins — ignored when hourly pair commits
+  apparent_temperature_max: [19, 17],
+  apparent_temperature_min: [1, 4],
+};
+const pairHourly = {
+  time: [
+    '2026-11-17T05:00', // before sunrise (not day high window)
+    '2026-11-17T08:00', // day
+    '2026-11-17T14:00', // day peak
+    '2026-11-17T18:00', // night
+    '2026-11-17T23:00', // night
+    '2026-11-18T04:00', // night low
+    '2026-11-18T08:00', // after next sunrise
+  ],
+  temperature_2m: [1, 12, 21, 10, 7, 3, 9],
+  apparent_temperature: [0, 11, 20, 9, 6, 2, 8],
+};
+const pair = Utils.dayNightTemps(pairDaily, pairHourly, 0, 'UTC');
+if (pair.high !== 21) { console.error('dayNight high', pair); process.exit(1); }
+if (pair.low !== 3) { console.error('dayNight low should be coming night (3), got', pair); process.exit(1); }
+if (pair.feelsHigh !== 20 || pair.feelsLow !== 2) {
+  console.error('dayNight feels', pair); process.exit(1);
+}
+// Truncated overnight (evening only) → keep calendar pair, do not mix.
+const truncHourly = {
+  time: [
+    '2026-11-17T08:00',
+    '2026-11-17T14:00',
+    '2026-11-17T18:00',
+    '2026-11-17T23:00',
+  ],
+  temperature_2m: [12, 21, 10, 7],
+  apparent_temperature: [11, 20, 9, 6],
+};
+const trunc = Utils.dayNightTemps(pairDaily, truncHourly, 0, 'UTC');
+if (trunc.high !== 20 || trunc.low !== 2) {
+  console.error('truncated overnight should keep API pair', trunc); process.exit(1);
+}
+// Empty hourly → API fallback.
+const empty = Utils.dayNightTemps(pairDaily, { time: [], temperature_2m: [] }, 0, 'UTC');
+if (empty.high !== 20 || empty.low !== 2) {
+  console.error('empty hourly should keep API pair', empty); process.exit(1);
+}
+// Missing sun times → 06:00–18:00 / 18:00–next 06:00 windows.
+const noSunDaily = {
+  time: ['2026-11-17', '2026-11-18'],
+  temperature_2m_max: [99],
+  temperature_2m_min: [0],
+};
+const noSunHourly = {
+  time: [
+    '2026-11-17T05:00',
+    '2026-11-17T07:00',
+    '2026-11-17T12:00',
+    '2026-11-17T19:00',
+    '2026-11-18T05:00',
+    '2026-11-18T07:00',
+  ],
+  temperature_2m: [1, 8, 22, 11, 4, 9],
+};
+const noSun = Utils.dayNightTemps(noSunDaily, noSunHourly, 0, 'UTC');
+if (noSun.high !== 22 || noSun.low !== 4) {
+  console.error('no-sun 06–18 windows failed', noSun); process.exit(1);
+}
 console.log('unit helpers ok');
 NODE
 pass "node unit helpers"
@@ -199,6 +272,10 @@ grep -q 'earthMarkW' js/ui.js js/ui-*.js || bad "earth compass W missing"
 grep -q 'current-weather__compass' css/style.css || bad "earth compass CSS missing"
 ! grep -q '>Rise</text>\|>Set</text>' js/ui.js js/ui-*.js || bad "Rise/Set labels should be removed"
 grep -q 'dayOutlook' js/ui.js js/ui-*.js || bad "shared dayOutlook missing"
+grep -q 'dayNightTemps' js/utils.js || bad "Utils.dayNightTemps missing"
+grep -q 'dayNightTemps' js/ui-forecast.js || bad "forecast must use dayNightTemps"
+grep -q 'dayNightTemps' js/ui-current.js || bad "current High/Low must use dayNightTemps"
+grep -q 'dayNightTemps' js/ui-modal.js || bad "day modal must use dayNightTemps"
 grep -q 'hourIcon' js/icons.js || bad "hourIcon consistency helper missing"
 grep -q '_hourlyNowIdx' js/ui.js js/ui-*.js || bad "hourly now-index for modal missing"
 grep -q 'hourly-strip' js/ui.js js/ui-*.js css/style.css || bad "hourly strip missing"

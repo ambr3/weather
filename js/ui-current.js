@@ -22,8 +22,9 @@ Object.assign(UI, {
     const phaseName = phase != null ? Utils.getMoonPhaseName(phase) : '';
     const phaseIllum = phase != null ? `${Utils.getMoonIllumination(phase)}% lit` : '';
 
-    const dayHigh = d.temperature_2m_max && d.temperature_2m_max[0] != null ? Utils.formatTemp(d.temperature_2m_max[0], units) : null;
-    const dayLow = d.temperature_2m_min && d.temperature_2m_min[0] != null ? Utils.formatTemp(d.temperature_2m_min[0], units) : null;
+    const todayPair = Utils.dayNightTemps(d, data.hourly, 0, this._tz);
+    const dayHigh = todayPair.high != null ? Utils.formatTemp(todayPair.high, units) : null;
+    const dayLow = todayPair.low != null ? Utils.formatTemp(todayPair.low, units) : null;
     const windUnit = Utils.getWindUnit(UI.windUnit);
     const dayWind = c.wind_speed_10m != null ? `${Math.round(c.wind_speed_10m)} ${windUnit}` : null;
     const summaryParts = [];

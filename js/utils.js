@@ -17,6 +17,117 @@ const Utils = {
     return units === 'imperial' ? `${rounded}°F` : `${rounded}°C`;
   },
 
+  // Next calendar YYYY-MM-DD (UTC date math — fine for date-only strings).
+  nextDateKey(dateStr) {
+    const parts = String(dateStr || '').split('-').map(Number);
+    if (parts.length < 3 || parts.some((n) => !Number.isFinite(n))) return null;
+    const dt = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2] + 1));
+    return dt.toISOString().slice(0, 10);
+  },
+
+  // BBC / NWS-style pair for a forecast day:
+  // high = max from sunrise→sunset (else 06:00–18:00 local)
+  // low  = min from sunset→next sunrise (else 18:00→next 06:00) — the coming night
+  // Only replaces the Open-Meteo calendar pair when BOTH windows have samples and
+  // hourly coverage reaches within 1h of each window end (avoids a mild last-day
+  // evening-only “low”, and mixed calendar/day-night semantics).
+  dayNightTemps(daily, hourly, dayIndex, tz) {
+    const i = dayIndex | 0;
+    const date = daily && daily.time && daily.time[i];
+    const apiHigh = daily && daily.temperature_2m_max && daily.temperature_2m_max[i];
+    const apiLow = daily && daily.temperature_2m_min && daily.temperature_2m_min[i];
+    const apiFeelsHigh = daily && daily.apparent_temperature_max && daily.apparent_temperature_max[i];
+    const apiFeelsLow = daily && daily.apparent_temperature_min && daily.apparent_temperature_min[i];
+    const out = {
+      high: apiHigh != null && Number.isFinite(Number(apiHigh)) ? Number(apiHigh) : null,
+      low: apiLow != null && Number.isFinite(Number(apiLow)) ? Number(apiLow) : null,
+      feelsHigh: apiFeelsHigh != null && Number.isFinite(Number(apiFeelsHigh)) ? Number(apiFeelsHigh) : null,
+      feelsLow: apiFeelsLow != null && Number.isFinite(Number(apiFeelsLow)) ? Number(apiFeelsLow) : null,
+    };
+    if (!date || !hourly || !Array.isArray(hourly.time) || !Array.isArray(hourly.temperature_2m)) {
+      return out;
+    }
+
+    const HOUR_MS = 3600000;
+    const riseIso = daily.sunrise && daily.sunrise[i];
+    const setIso = daily.sunset && daily.sunset[i];
+    const nextRiseIso = daily.sunrise && daily.sunrise[i + 1];
+    const nextDate = (daily.time && daily.time[i + 1]) || this.nextDateKey(date);
+
+    const dayStart = riseIso
+      ? this.parseLocal(riseIso, tz)
+      : this.parseLocal(`${date}T06:00:00`, tz);
+    const dayEnd = setIso
+      ? this.parseLocal(setIso, tz)
+      : this.parseLocal(`${date}T18:00:00`, tz);
+    const nightEnd = nextRiseIso
+      ? this.parseLocal(nextRiseIso, tz)
+      : (nextDate ? this.parseLocal(`${nextDate}T06:00:00`, tz) : null);
+
+    const dayOk = !isNaN(dayStart) && !isNaN(dayEnd) && dayEnd.getTime() > dayStart.getTime();
+    const nightOk = dayOk && nightEnd && !isNaN(nightEnd) && nightEnd.getTime() > dayEnd.getTime();
+    if (!dayOk && !nightOk) return out;
+
+    const dayStartMs = dayOk ? dayStart.getTime() : 0;
+    const dayEndMs = dayOk ? dayEnd.getTime() : 0;
+    const nightStartMs = nightOk ? dayEnd.getTime() : 0;
+    const nightEndMs = nightOk ? nightEnd.getTime() : 0;
+
+    let high = null;
+    let low = null;
+    let feelsHigh = null;
+    let feelsLow = null;
+    let lastMs = null;
+    const temps = hourly.temperature_2m;
+    const feels = hourly.apparent_temperature;
+
+    for (let h = 0; h < hourly.time.length; h++) {
+      const tIso = hourly.time[h];
+      if (!tIso) continue;
+      const t = this.parseLocal(tIso, tz);
+      if (isNaN(t)) continue;
+      const ms = t.getTime();
+      lastMs = ms;
+      const temp = temps[h];
+      const feel = feels && feels[h];
+
+      if (dayOk && ms >= dayStartMs && ms < dayEndMs) {
+        if (temp != null && Number.isFinite(Number(temp))) {
+          const v = Number(temp);
+          if (high == null || v > high) high = v;
+        }
+        if (feel != null && Number.isFinite(Number(feel))) {
+          const v = Number(feel);
+          if (feelsHigh == null || v > feelsHigh) feelsHigh = v;
+        }
+      }
+      if (nightOk && ms >= nightStartMs && ms < nightEndMs) {
+        if (temp != null && Number.isFinite(Number(temp))) {
+          const v = Number(temp);
+          if (low == null || v < low) low = v;
+        }
+        if (feel != null && Number.isFinite(Number(feel))) {
+          const v = Number(feel);
+          if (feelsLow == null || v < feelsLow) feelsLow = v;
+        }
+      }
+    }
+
+    // Coverage: hourly must reach within 1h of the window end (dawn for overnight).
+    const dayCovered = dayOk && lastMs != null && lastMs >= dayEndMs - HOUR_MS;
+    const nightCovered = nightOk && lastMs != null && lastMs >= nightEndMs - HOUR_MS;
+    const highOk = high != null && dayCovered;
+    const lowOk = low != null && nightCovered;
+    // Commit as a pair only — never mix calendar min with daytime max.
+    if (highOk && lowOk) {
+      out.high = high;
+      out.low = low;
+      if (feelsHigh != null) out.feelsHigh = feelsHigh;
+      if (feelsLow != null) out.feelsLow = feelsLow;
+    }
+    return out;
+  },
+
   formatTime(isoString, tz) {
     const d = isoString instanceof Date ? isoString : new Date(isoString);
     let out;

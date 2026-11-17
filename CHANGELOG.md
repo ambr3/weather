@@ -4,6 +4,10 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
+## 0.8.2 — 2026-11-17
+
+- Daily High/Low uses daytime high and the coming overnight low (sunset→next sunrise), not Open-Meteo’s midnight-to-midnight min. Incomplete overnight coverage (e.g. last forecast day) keeps the API pair so lows are not evening-only.
+
 ## 0.8.1 — 2026-11-14
 
 - iPhone/iPad home-screen status bar is solid black instead of see-through (stops the top blur).
