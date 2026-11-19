@@ -105,13 +105,19 @@ const UI = {
   },
 
 
+  // Hour that contains now (last stamp at or before now). The strip starts
+  // here, so Now is this hour rather than the next one.
   _hourlyStartIdx(hourly) {
-    if (!hourly || !hourly.time) return 0;
+    if (!hourly || !hourly.time || !hourly.time.length) return 0;
     const now = Date.now();
+    let idx = 0;
     for (let i = 0; i < hourly.time.length; i++) {
-      if (Utils.parseLocal(hourly.time[i], this._tz).getTime() >= now) return i;
+      const t = Utils.parseLocal(hourly.time[i], this._tz).getTime();
+      if (Number.isNaN(t)) continue;
+      if (t <= now) idx = i;
+      else break;
     }
-    return hourly.time.length;
+    return idx;
   },
 
   showLoading() {
@@ -197,10 +203,8 @@ const UI = {
     if (current) current.textContent = `Updated ${Utils.formatClock(d)}`;
   },
 
-  // Values for the "Now" tile/modal slot, preferring the live current-weather
-  // observation so it stays consistent with the summary card. Rain % is the
-  // current-hour probability (only shown when this hour actually has rain or
-  // snow expected), never the whole-day maximum.
+  // Values for the "Now" tile. Icon and chance are this hour, same as the
+  // summary card. The chance stays visible below 50%.
   _nowFromCurrent(cur, hourly, units) {
     if (!cur) return null;
     const startIdx = this._hourlyStartIdx(hourly);
@@ -220,6 +224,7 @@ const UI = {
       dew: cur.dew_point_2m != null ? Utils.formatTemp(cur.dew_point_2m, units) : null,
       pressure: cur.pressure_msl != null ? Utils.formatPressure(cur.pressure_msl, UI.pressUnit) : null,
       cloud: cur.cloud_cover != null ? `${Math.round(cur.cloud_cover)}%` : null,
+      cloudCover: cur.cloud_cover != null ? cur.cloud_cover : null,
       visibility: cur.visibility != null ? Utils.formatVisibility(cur.visibility, UI.visUnit) : null,
       cape: cur.cape != null ? cur.cape : null,
       code: cur.weather_code != null ? cur.weather_code : null,

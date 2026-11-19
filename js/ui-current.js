@@ -5,11 +5,10 @@ Object.assign(UI, {
     const d = data.daily || {};
     const nowStartIdx = this._hourlyStartIdx(data.hourly);
     const nowPop = this._meaningfulNowPop(c, data.hourly, nowStartIdx);
-    const todayKey = (d.time && d.time[0]) ? d.time[0] : this._todayDateKey();
-    const outlook = this.dayOutlook(todayKey, d, data.hourly, units);
-    const dayPop = outlook ? outlook.pop : null;
     const uvNow = data.hourly && data.hourly.uv_index ? data.hourly.uv_index[nowStartIdx] : null;
-    const iconCode = WeatherIcons.hourIcon(c.weather_code, nowPop, c.precipitation ?? 0, c.snowfall ?? 0);
+    const iconCode = WeatherIcons.hourIcon(
+      c.weather_code, nowPop, c.precipitation ?? 0, c.snowfall ?? 0, c.cloud_cover
+    );
     const temp = Utils.formatTemp(c.temperature_2m, units);
     const feels = Utils.formatTemp(c.apparent_temperature, units);
     const desc = Utils.getWeatherDescription(iconCode);
@@ -29,7 +28,7 @@ Object.assign(UI, {
     const dayWind = c.wind_speed_10m != null ? `${Math.round(c.wind_speed_10m)} ${windUnit}` : null;
     const summaryParts = [];
     if (dayHigh && dayLow) summaryParts.push(`High ${dayHigh} / Low ${dayLow}`);
-    if (dayPop != null && dayPop > 0) summaryParts.push(`${dayPop}% rain`);
+    if (nowPop != null && nowPop > 0) summaryParts.push(`${nowPop}% ${WeatherIcons.precipWord(c.weather_code)}`);
     if (dayWind) summaryParts.push(`Wind ${dayWind}`);
     const daySummary = summaryParts.length ? summaryParts.join(' · ') : '';
 

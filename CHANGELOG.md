@@ -4,6 +4,8 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
+- Now, hourly, and daily icons share one rule: rain, drizzle, snow, or thunder only when the chance is at least 50% and some precipitation is forecast. Otherwise the sky stays a cloud or sun, and the percentage is still shown. One wet hour no longer renames the day. The Now chance is this hour, not the day's highest.
+
 ## 0.8.2 — 2026-11-17
 
 - Daily High/Low uses daytime high and the coming overnight low (sunset→next sunrise), not Open-Meteo’s midnight-to-midnight min. Incomplete overnight coverage (e.g. last forecast day) keeps the API pair so lows are not evening-only.

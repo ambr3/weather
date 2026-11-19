@@ -44,107 +44,110 @@ const WeatherIcons = {
     return 'clear';
   },
 
-  // A clear/cloud code with real precipitation should not stay a sun icon.
-  // Probability alone never changes the code. An existing precip code is kept
-  // as Open-Meteo sent it — drizzle is not renamed to rain.
-  adjustForPrecip(code, pop, precip, snow) {
+  // Wet icon and wet words only when the chance is at least this and some
+  // precipitation is forecast. Below that, keep the sky Open-Meteo sent.
+  WET_POP: 50,
+
+  _isWet(code) {
     const g = this._group(code);
-    const r = precip != null ? precip : 0;
-    const s = snow != null ? snow : 0;
-    if (g === 'rain' || g === 'snow' || g === 'thunder' || g === 'drizzle' || g === 'fog') return code;
-    if (s > 0) return 71;
-    if (r > 0) return 61;
-    return code;
+    return g === 'drizzle' || g === 'rain' || g === 'snow' || g === 'thunder';
   },
 
-  // Hourly / current: show that slot's Open-Meteo code. A wet code with 0.0 mm
-  // is overcast instead, so the strip doesn't say rain when nothing falls.
-  hourIcon(code, pop, precip, snow) {
+  // Word on a chance line. Drizzle counts as rain.
+  precipWord(code) {
     const g = this._group(code);
+    if (g === 'snow') return 'snow';
+    if (g === 'thunder') return 'thunder';
+    return 'rain';
+  },
+
+  // Sky to show when a wet code is withheld. Same bands for every card.
+  skyFromCover(cover) {
+    const n = Number(cover);
+    if (!Number.isFinite(n)) return 3;
+    if (n >= 80) return 3;
+    if (n >= 40) return 2;
+    if (n >= 10) return 1;
+    return 0;
+  },
+
+  // One rule for Now and every hour. A wet Open-Meteo code is kept only when
+  // the chance is at least 50% and the amount is above zero. Otherwise the
+  // sky code is kept, or cloud cover stands in for a withheld wet code.
+  hourIcon(code, pop, precip, snow, cloudCover) {
     const rain = precip != null ? precip : 0;
     const sn = snow != null ? snow : 0;
-    if ((g === 'rain' || g === 'drizzle' || g === 'snow') && rain <= 0 && sn <= 0) {
-      return 3;
-    }
-    if (g === 'rain' || g === 'drizzle' || g === 'snow' || g === 'thunder') return code;
-    return this.adjustForPrecip(code, pop, rain, sn);
+    const chance = pop != null && Number(pop) >= this.WET_POP;
+    if (this._isWet(code) && chance && (rain > 0 || sn > 0)) return Number(code);
+    if (!this._isWet(code) && code != null) return Number(code);
+    return this.skyFromCover(cloudCover);
   },
 
-  // Sky codes pass through. A precip code is kept when the day has a real
-  // amount, and dropped to partly cloudy when the amount is zero.
-  // rainSum is mm in metric, inches in imperial.
-  dailyIcon(code, pop, rainSum, snowSum, units) {
-    const g = this._group(code);
-    if (g === 'thunder' || g === 'fog' || g === 'clear' || g === 'clearsome' || g === 'clouds' || g === 'overcast') return code;
-    const rain = rainSum != null ? rainSum : 0;
-    const snow = snowSum != null ? snowSum : 0;
-    const rainThresh = units === 'imperial' ? 0.01 : 0.1;
-    if (g === 'snow') return snow > 0 ? code : 2;
-    if (g === 'rain' || g === 'drizzle') return (rain >= rainThresh || snow > 0) ? code : 2;
-    return code;
-  },
-
-  // Open-Meteo's daily weather_code is the *most severe* condition of the day,
-  // not the predominant one — a day with lots of sun and a brief overcast spell
-  // would otherwise be summarized as "overcast". Derive the day's look from
-  // the most common condition during daylight hours instead. Ties lean toward
-  // the sunnier reading, except when real precipitation is present: an honest
-  // "showers" day is never shown as a sun icon.
-  _groupRep: { clear: 0, clearsome: 1, clouds: 2, overcast: 3, fog: 45, drizzle: 51, rain: 61, snow: 71, thunder: 95 },
-
-  dominantDayCode(dateStr, hourly, pop, rainSum, snowSum, units) {
-    if (!hourly || !hourly.time || !hourly.weather_code) return null;
-    const prefix = dateStr + 'T';
-    const counts = {};
-    let seen = 0;
-    for (let k = 0; k < hourly.time.length; k++) {
-      if (!hourly.time[k].startsWith(prefix)) continue;
-      if (hourly.is_day && hourly.is_day[k] === 0) continue;
-      const wc = hourly.weather_code[k];
-      if (wc == null) continue;
-      const g = this._group(wc);
-      counts[g] = (counts[g] || 0) + 1;
-      seen++;
-    }
-    if (!seen) return null;
-    const maxCount = Math.max(...Object.values(counts));
-    const lead = Object.keys(counts).filter((g) => counts[g] === maxCount);
-    if (lead.length === 1) return this._groupRep[lead[0]];
-
-    const p = pop != null ? pop : 0;
-    const rain = rainSum != null ? rainSum : 0;
-    const snow = snowSum != null ? snowSum : 0;
-    const rainThresh = units === 'imperial' ? 0.04 : 1;
-    const hasPrecip = (rain >= rainThresh && p >= 30) || (snow > 0 && p >= 30) || p >= 50;
-    const precipGroups = ['drizzle', 'rain', 'snow', 'thunder'];
-    const tiedPrecip = lead.filter((g) => precipGroups.includes(g));
-    if (hasPrecip && tiedPrecip.length) return this._groupRep[tiedPrecip[0]];
-    const order = ['clear', 'clearsome', 'clouds', 'overcast', 'fog', 'drizzle', 'rain', 'snow', 'thunder'];
-    return this._groupRep[order.find((g) => lead.includes(g))];
-  },
-
-  // Most common Open-Meteo code among hours that actually have rain or snow.
-  leadPrecipCode(dateStr, hourly) {
-    if (!hourly || !hourly.time || !hourly.weather_code) return null;
-    const prefix = dateStr + 'T';
+  // Day icon: the sky that covers the daylight hours, each hour judged by hourIcon.
+  // One wet hour does not rename the day. Ties lean toward the clearer code.
+  dayIcon(dateStr, hourly) {
+    if (!hourly || !hourly.time || !hourly.weather_code || dateStr == null) return 3;
+    const prefix = String(dateStr) + 'T';
+    const collect = (daylightOnly) => {
+      const codes = [];
+      for (let k = 0; k < hourly.time.length; k++) {
+        if (!String(hourly.time[k] || '').startsWith(prefix)) continue;
+        if (daylightOnly && hourly.is_day && hourly.is_day[k] === 0) continue;
+        const wc = hourly.weather_code[k];
+        if (wc == null) continue;
+        const pop = hourly.precipitation_probability ? hourly.precipitation_probability[k] : null;
+        const precip = hourly.precipitation && hourly.precipitation[k] != null ? hourly.precipitation[k] : 0;
+        const snow = hourly.snowfall && hourly.snowfall[k] != null ? hourly.snowfall[k] : 0;
+        const cloud = hourly.cloud_cover ? hourly.cloud_cover[k] : null;
+        codes.push(this.hourIcon(wc, pop, precip, snow, cloud));
+      }
+      return codes;
+    };
+    let codes = collect(true);
+    if (!codes.length) codes = collect(false);
+    if (!codes.length) return 3;
     const counts = new Map();
-    for (let k = 0; k < hourly.time.length; k++) {
-      if (!String(hourly.time[k] || '').startsWith(prefix)) continue;
-      const rain = hourly.precipitation && hourly.precipitation[k] != null ? hourly.precipitation[k] : 0;
-      const snow = hourly.snowfall && hourly.snowfall[k] != null ? hourly.snowfall[k] : 0;
-      if (rain <= 0 && snow <= 0) continue;
-      const wc = hourly.weather_code[k];
-      if (wc == null) continue;
-      const g = this._group(wc);
-      if (g !== 'drizzle' && g !== 'rain' && g !== 'snow' && g !== 'thunder') continue;
-      counts.set(wc, (counts.get(wc) || 0) + 1);
-    }
+    codes.forEach((c) => counts.set(c, (counts.get(c) || 0) + 1));
     let best = null;
     let n = 0;
-    counts.forEach((c, code) => {
-      if (c > n) {
-        n = c;
+    counts.forEach((count, code) => {
+      if (best == null || count > n) {
+        n = count;
         best = code;
+        return;
+      }
+      if (count !== n) return;
+      const bestWet = this._isWet(best);
+      const codeWet = this._isWet(code);
+      if (bestWet && !codeWet) best = code;
+      else if (bestWet === codeWet && Number(code) < Number(best)) best = code;
+    });
+    return best;
+  },
+
+  // Most common wet kind in the day's daylight hours, for the chance line.
+  dayPrecipWord(dateStr, hourly) {
+    if (!hourly || !hourly.time || !hourly.weather_code || dateStr == null) return 'rain';
+    const prefix = String(dateStr) + 'T';
+    const counts = {};
+    const add = (daylightOnly) => {
+      for (let k = 0; k < hourly.time.length; k++) {
+        if (!String(hourly.time[k] || '').startsWith(prefix)) continue;
+        if (daylightOnly && hourly.is_day && hourly.is_day[k] === 0) continue;
+        const wc = hourly.weather_code[k];
+        if (!this._isWet(wc)) continue;
+        const word = this.precipWord(wc);
+        counts[word] = (counts[word] || 0) + 1;
+      }
+    };
+    add(true);
+    if (!Object.keys(counts).length) add(false);
+    let best = 'rain';
+    let n = 0;
+    Object.keys(counts).forEach((word) => {
+      if (counts[word] > n) {
+        n = counts[word];
+        best = word;
       }
     });
     return best;

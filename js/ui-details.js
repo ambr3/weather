@@ -300,11 +300,8 @@ Object.assign(UI, {
     return Math.round(prob);
   },
 
-  // Unified day outlook (icon + rain %) — summary, forecast rows, and forecast
-  // modal all read from this.
-  // Wet day: Open-Meteo's daily weather_code (not a rewritten sky).
-  // Dry day: the most common daylight sky, so one overcast hour does not
-  // rename a clear day. If any hour still has real precip, use that hour's code.
+  // Day row and day modal: icon is the daylight sky (same hour rule), not
+  // Open-Meteo's most severe daily code and not a single wet hour.
   dayOutlook(dateStr, daily, hourly, units) {
     if (!daily || !daily.time || dateStr == null) return null;
     const idx = daily.time.indexOf(String(dateStr));
@@ -312,38 +309,9 @@ Object.assign(UI, {
     const pop = this.meaningfulDayPop(dateStr, daily, hourly);
     const rainSum = daily.rain_sum && daily.rain_sum[idx] != null ? daily.rain_sum[idx] : 0;
     const snowSum = daily.snowfall_sum && daily.snowfall_sum[idx] != null ? daily.snowfall_sum[idx] : 0;
-    const precipSum = daily.precipitation_sum && daily.precipitation_sum[idx] != null ? daily.precipitation_sum[idx] : 0;
-    const rawDaily = daily.weather_code ? daily.weather_code[idx] : null;
-    const wet = (g) => g === 'drizzle' || g === 'rain' || g === 'snow' || g === 'thunder';
-    const hasAmount = rainSum > 0 || snowSum > 0 || precipSum > 0;
-
-    let iconCode;
-    if (rawDaily != null && wet(WeatherIcons._group(rawDaily)) && hasAmount) {
-      iconCode = rawDaily;
-    } else {
-      const raw = WeatherIcons.dominantDayCode(dateStr, hourly, pop ?? 0, rainSum, snowSum, units)
-        ?? rawDaily;
-      iconCode = WeatherIcons.dailyIcon(raw, pop ?? 0, rainSum, snowSum, units);
-    }
-    if (!wet(WeatherIcons._group(iconCode))) {
-      const lead = WeatherIcons.leadPrecipCode(dateStr, hourly);
-      if (lead != null) iconCode = lead;
-    }
-
-    // Today while it's wet now: don't paint a dry day icon beside a wet summary.
-    if (String(dateStr) === this._todayDateKey() && this._current) {
-      const c = this._current;
-      const nowIdx = this._hourlyStartIdx(hourly);
-      const nowPop = this._meaningfulNowPop(c, hourly, nowIdx);
-      const nowIcon = WeatherIcons.hourIcon(
-        c.weather_code, nowPop, c.precipitation ?? 0, c.snowfall ?? 0
-      );
-      if (wet(WeatherIcons._group(nowIcon)) && !wet(WeatherIcons._group(iconCode))) {
-        iconCode = nowIcon;
-      }
-    }
-
-    return { idx, pop, rainSum, snowSum, iconCode };
+    const iconCode = WeatherIcons.dayIcon(dateStr, hourly);
+    const kind = WeatherIcons.dayPrecipWord(dateStr, hourly);
+    return { idx, pop, rainSum, snowSum, iconCode, kind };
   },
 
   // Min/max across the 24 hours of a date for a given hourly key (e.g. dew point).

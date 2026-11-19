@@ -347,10 +347,11 @@ Object.assign(UI, {
   },
 
   // Day blurb: sky + temps + rain chance (sun times stay in the list). Max ~5 lines in CSS.
-  _dayStory({ weekday, desc, high, low, pop, rainLabel }) {
+  _dayStory({ weekday, desc, high, low, pop, rainLabel, kind }) {
     const dayName = weekday === 'Today' ? 'Today' : weekday;
     const sky = (desc || 'mixed conditions').toLowerCase();
     const looksOk = /^(clear sky|mainly clear|partly cloudy|overcast)$/.test(sky);
+    const what = kind === 'snow' || kind === 'thunder' ? kind : 'rain';
     let open;
     if (high !== '—' && low !== '—') {
       open = looksOk
@@ -363,9 +364,9 @@ Object.assign(UI, {
     } else {
       open = looksOk ? `${dayName} looks ${sky}.` : `${dayName} brings ${sky}.`;
     }
-    if (rainLabel && pop > 0) open += ` Expect about a ${Math.round(pop)}% chance of rain (~${rainLabel}).`;
-    else if (rainLabel) open += ` Expect around ${rainLabel} of rain.`;
-    else if (pop > 0) open += ` Rain chance about ${Math.round(pop)}%.`;
+    if (rainLabel && pop > 0) open += ` Expect about a ${Math.round(pop)}% chance of ${what} (~${rainLabel}).`;
+    else if (rainLabel) open += ` Expect around ${rainLabel} of ${what}.`;
+    else if (pop > 0) open += ` ${what.charAt(0).toUpperCase()}${what.slice(1)} chance about ${Math.round(pop)}%.`;
     return open;
   },
 
@@ -457,19 +458,14 @@ Object.assign(UI, {
     const outlook = this.dayOutlook(date, d, this._forecastHourly, units);
     const pop = outlook && outlook.pop != null ? outlook.pop : 0;
     const rainSum = outlook ? outlook.rainSum : (d.rain_sum ? d.rain_sum[modalIndex] : null);
-    const snowSum = outlook ? outlook.snowSum : (d.snowfall_sum ? d.snowfall_sum[modalIndex] : null);
     const sunshine = d.sunshine_duration && d.sunshine_duration[modalIndex] != null ? Utils.formatDuration(d.sunshine_duration[modalIndex]) : null;
     const daylight = d.daylight_duration && d.daylight_duration[modalIndex] != null ? Utils.formatDuration(d.daylight_duration[modalIndex]) : null;
     const sunrise = d.sunrise && d.sunrise[modalIndex] ? Utils.formatTime(d.sunrise[modalIndex], this._tz) : null;
     const sunset = d.sunset && d.sunset[modalIndex] ? Utils.formatTime(d.sunset[modalIndex], this._tz) : null;
     const tempMaxRaw = pair.high;
     const tempTone = tempMaxRaw != null ? Utils.getTempTone(tempMaxRaw, units) : null;
-    const iconCode = outlook
-      ? outlook.iconCode
-      : WeatherIcons.dailyIcon(
-        WeatherIcons.dominantDayCode(date, this._forecastHourly, pop, rainSum ?? 0, snowSum ?? 0, units) ?? d.weather_code[modalIndex],
-        pop, rainSum ?? 0, snowSum ?? 0, units
-      );
+    const iconCode = outlook ? outlook.iconCode : WeatherIcons.dayIcon(date, this._forecastHourly);
+    const kind = outlook && outlook.kind ? outlook.kind : WeatherIcons.dayPrecipWord(date, this._forecastHourly);
     const desc = Utils.getWeatherDescription(iconCode);
     const feelsHighRaw = pair.feelsHigh;
     const feelsVal = feelsHigh != null && feelsLow != null
@@ -485,7 +481,7 @@ Object.assign(UI, {
     const rainLabel = Utils.formatPrecip(rainSum, units) || rainZero;
     const storyRain = Utils.formatPrecip(rainSum, units);
     const summary = this._dayStory({
-      weekday: weekdayLong, desc, high, low, pop, rainLabel: storyRain,
+      weekday: weekdayLong, desc, high, low, pop, rainLabel: storyRain, kind,
     });
     const row = (label, value, opts) => this._statRow(label, value, opts);
     const feelsHtml = feelsHigh != null && feelsLow != null && feelsHighRaw != null;

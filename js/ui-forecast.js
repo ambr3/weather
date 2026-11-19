@@ -15,14 +15,15 @@ Object.assign(UI, {
       const min = pair.low != null ? Math.round(pair.low) : '—';
       const outlook = this.dayOutlook(date, daily, hourly, units);
       const pop = outlook && outlook.pop != null ? outlook.pop : 0;
-      const iconCode = outlook ? outlook.iconCode : (daily.weather_code ? daily.weather_code[i] : 0);
+      const iconCode = outlook ? outlook.iconCode : WeatherIcons.dayIcon(date, hourly);
+      const kind = outlook && outlook.kind ? outlook.kind : 'rain';
       const icon = WeatherIcons.get(iconCode, true);
 
       const d = Utils.parseLocal(date + 'T00:00:00', this._tz);
       const weekday = i === 0 ? 'Today' : d.toLocaleDateString('en-US', { timeZone: this._tz || undefined, weekday: 'short' });
       const dateLabel = d.toLocaleDateString('en-US', { timeZone: this._tz || undefined, month: 'short', day: 'numeric' });
       const label = Utils.getWeatherDescription(iconCode);
-      const chance = pop > 0 ? `<span class="forecast-card__row-chance">${pop}% rain</span>` : '';
+      const chance = pop > 0 ? `<span class="forecast-card__row-chance">${pop}% ${kind}</span>` : '';
 
       return `
         <div class="forecast-card__row${i === 0 ? ' forecast-card__row--today' : ''}" role="listitem" data-i="${i}">
@@ -176,10 +177,12 @@ Object.assign(UI, {
         if (nowVals.precip != null) precipNow = nowVals.precip;
         if (nowVals.snow != null) snowNow = nowVals.snow;
       }
-      const iconCode = WeatherIcons.hourIcon(
-        nowVals && nowVals.code != null ? nowVals.code : hourly.weather_code[idx],
-        pop, precipNow, snowNow
-      );
+      const rawCode = nowVals && nowVals.code != null ? nowVals.code : hourly.weather_code[idx];
+      const cloudNow = nowVals && nowVals.cloudCover != null
+        ? nowVals.cloudCover
+        : (hourly.cloud_cover ? hourly.cloud_cover[idx] : null);
+      const iconCode = WeatherIcons.hourIcon(rawCode, pop, precipNow, snowNow, cloudNow);
+      const kind = WeatherIcons.precipWord(rawCode);
       const icon = WeatherIcons.get(
         iconCode,
         nowVals && nowVals.isDay != null ? nowVals.isDay
@@ -190,7 +193,7 @@ Object.assign(UI, {
       return `
         <div class="hourly-strip__hour${isNow ? ' hourly-strip__hour--now' : ''}"
              role="listitem" data-i="${modalI}" tabindex="0"
-             aria-label="${this._esc(`${timeLabel}, ${temp}${rain ? `, ${rain} rain` : ''}`)}">
+             aria-label="${this._esc(`${timeLabel}, ${temp}${rain ? `, ${rain} ${kind}` : ''}`)}">
           <span class="hourly-strip__time">${this._esc(timeLabel)}</span>
           <span class="hourly-strip__icon">${icon}</span>
           <span class="hourly-strip__temp">${this._esc(temp)}</span>

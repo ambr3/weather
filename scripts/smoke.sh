@@ -227,6 +227,33 @@ const noSun = Utils.dayNightTemps(noSunDaily, noSunHourly, 0, 'UTC');
 if (noSun.high !== 22 || noSun.low !== 4) {
   console.error('no-sun 06–18 windows failed', noSun); process.exit(1);
 }
+const iconsSrc = fs.readFileSync('js/icons.js', 'utf8');
+eval(iconsSrc.replace(/^const WeatherIcons =/, 'global.WeatherIcons ='));
+if (WeatherIcons.hourIcon(51, 27, 0.2, 0, 90) !== 3) {
+  console.error('drizzle under 50% should stay overcast'); process.exit(1);
+}
+if (WeatherIcons.hourIcon(51, 60, 0.4, 0, 90) !== 51) {
+  console.error('drizzle at 60% with amount should stay drizzle'); process.exit(1);
+}
+if (WeatherIcons.hourIcon(2, 80, 1, 0, 40) !== 2) {
+  console.error('sky code must not be rewritten to rain'); process.exit(1);
+}
+if (WeatherIcons.precipWord(71) !== 'snow' || WeatherIcons.precipWord(95) !== 'thunder') {
+  console.error('precip word'); process.exit(1);
+}
+const fri = {
+  time: ['2026-11-20T08:00', '2026-11-20T12:00', '2026-11-20T15:00'],
+  is_day: [1, 1, 1],
+  weather_code: [51, 51, 3],
+  precipitation_probability: [27, 12, 4],
+  precipitation: [0.2, 0, 0],
+  snowfall: [0, 0, 0],
+  cloud_cover: [90, 80, 100],
+};
+if (WeatherIcons.dayIcon('2026-11-20', fri) !== 3) {
+  console.error('low-chance drizzle day should stay overcast', WeatherIcons.dayIcon('2026-11-20', fri));
+  process.exit(1);
+}
 console.log('unit helpers ok');
 NODE
 pass "node unit helpers"
@@ -277,6 +304,8 @@ grep -q 'dayNightTemps' js/ui-forecast.js || bad "forecast must use dayNightTemp
 grep -q 'dayNightTemps' js/ui-current.js || bad "current High/Low must use dayNightTemps"
 grep -q 'dayNightTemps' js/ui-modal.js || bad "day modal must use dayNightTemps"
 grep -q 'hourIcon' js/icons.js || bad "hourIcon consistency helper missing"
+grep -q 'dayIcon' js/icons.js js/ui-details.js || bad "dayIcon missing"
+! grep -q 'leadPrecipCode\|dailyIcon\|dominantDayCode' js/icons.js js/ui.js js/ui-*.js || bad "old day-icon shortcuts are back"
 grep -q '_hourlyNowIdx' js/ui.js js/ui-*.js || bad "hourly now-index for modal missing"
 grep -q 'hourly-strip' js/ui.js js/ui-*.js css/style.css || bad "hourly strip missing"
 grep -q 'hourly-strip__hour--now' js/ui.js js/ui-*.js css/style.css || bad "hourly Now column missing"
