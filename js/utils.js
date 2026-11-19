@@ -128,6 +128,153 @@ const Utils = {
     return out;
   },
 
+  // 'YYYY-MM-DDTHH' for the hour containing epoch ms, in tz or device local.
+  // Hourly stamps are location-local, so this lines up with time.slice(0, 13).
+  hourKey(ms, tz) {
+    const d = new Date(ms);
+    if (!Number.isFinite(d.getTime())) return '';
+    let year;
+    let month;
+    let day;
+    let hour;
+    if (tz) {
+      try {
+        const parts = {};
+        for (const part of this._dtf(tz, {
+          hour12: false, hourCycle: 'h23', year: 'numeric', month: '2-digit',
+          day: '2-digit', hour: '2-digit',
+        }).formatToParts(d)) {
+          if (part.type !== 'literal') parts[part.type] = part.value;
+        }
+        year = parts.year;
+        month = parts.month;
+        day = parts.day;
+        hour = parts.hour;
+      } catch {
+        year = null;
+      }
+    }
+    if (!year) {
+      const p = (n) => String(n).padStart(2, '0');
+      year = String(d.getFullYear());
+      month = p(d.getMonth() + 1);
+      day = p(d.getDate());
+      hour = p(d.getHours());
+    }
+    return this.rollHour24(year, month, day, hour);
+  },
+
+  // Intl can report hour 24 for midnight. That instant is the next day's 00.
+  rollHour24(year, month, day, hour) {
+    const p = (n) => String(n).padStart(2, '0');
+    let y = String(year);
+    let m = p(month);
+    let d = p(day);
+    let h = p(hour);
+    if (h === '24') {
+      const next = this.nextDateKey(`${y}-${m}-${d}`);
+      if (next) {
+        y = next.slice(0, 4);
+        m = next.slice(5, 7);
+        d = next.slice(8, 10);
+      }
+      h = '00';
+    }
+    return `${y}-${m}-${d}T${h}`;
+  },
+
+  // Hourly stamp in the window for dateStr.
+  // nowKey set: that date from the current hour forward, plus the next
+  // date's 00–05 (tonight after midnight). Past hours stay out.
+  // nowKey empty: every hour of dateStr (a later forecast day).
+  hourInWindow(stamp, dateStr, nowKey) {
+    const t = String(stamp || '');
+    if (t.length < 13 || !dateStr) return false;
+    if (nowKey && t.slice(0, 13) < nowKey) return false;
+    if (t.startsWith(String(dateStr) + 'T')) return true;
+    if (!nowKey) return false;
+    const next = this.nextDateKey(dateStr);
+    if (!next || !t.startsWith(next + 'T')) return false;
+    const hour = Number(t.slice(11, 13));
+    return hour >= 0 && hour < 6;
+  },
+
+  // Highest precipitation_probability in the same window as rainTiming.
+  // hasHours is true when that window contains time stamps, even if every
+  // probability is null.
+  windowMaxPop(dateStr, hourly, nowMs, tz) {
+    const out = { max: null, hasHours: false };
+    if (!dateStr || !hourly || !Array.isArray(hourly.time)) return out;
+    const nowKey = nowMs != null && Number.isFinite(Number(nowMs)) ? this.hourKey(Number(nowMs), tz) : '';
+    const probs = hourly.precipitation_probability;
+    for (let k = 0; k < hourly.time.length; k++) {
+      if (!this.hourInWindow(hourly.time[k], dateStr, nowKey)) continue;
+      out.hasHours = true;
+      const p = probs ? probs[k] : null;
+      if (p != null && Number.isFinite(Number(p)) && (out.max == null || Number(p) > out.max)) out.max = Number(p);
+    }
+    return out;
+  },
+
+  // Daily maximum fills in only when the window has nothing hourly to say.
+  // Today with stamps — even if every chance is null — does not use it.
+  resolveDayPop(span, isToday, dailyMax) {
+    if (span && span.max != null && span.max > 0) return Math.round(span.max);
+    if (isToday && span && span.hasHours) return null;
+    if (dailyMax == null || !(Number(dailyMax) > 0)) return null;
+    return Math.round(Number(dailyMax));
+  },
+
+  // Timing, chance, and amount from hourly chances still ahead — the same
+  // hours the strip shows from Now, including tonight after midnight
+  // (next date 00:00–05:59). Not the daily maximum, and not hours already
+  // before the current hour. nowMs (epoch) drops those past hours and opens
+  // the post-midnight tail; omit it to use every hour of the date only.
+  // The percentage is the highest chance among the hours that justify the
+  // time phrase; millimetres are the sum of precipitation on those same
+  // hours. hours is that set (chance + weather code) for the Now sentence.
+  rainTiming(dateStr, hourly, nowMs, tz) {
+    const empty = { when: '', pop: null, precip: null, hours: [] };
+    if (!dateStr || !hourly || !hourly.time || !hourly.precipitation_probability) return empty;
+    const nowKey = nowMs != null && Number.isFinite(Number(nowMs)) ? this.hourKey(Number(nowMs), tz) : '';
+    const slots = [];
+    for (let k = 0; k < hourly.time.length; k++) {
+      const t = String(hourly.time[k] || '');
+      if (!this.hourInWindow(t, dateStr, nowKey)) continue;
+      const pop = hourly.precipitation_probability[k];
+      if (pop == null || !(Number(pop) > 0)) continue;
+      const hour = Number(t.slice(11, 13));
+      if (!Number.isFinite(hour)) continue;
+      const precip = hourly.precipitation && hourly.precipitation[k] != null ? Number(hourly.precipitation[k]) : 0;
+      const code = hourly.weather_code ? hourly.weather_code[k] : null;
+      slots.push({
+        hour,
+        pop: Number(pop),
+        precip: Number.isFinite(precip) ? precip : 0,
+        code,
+      });
+    }
+    if (!slots.length) return empty;
+    const max = Math.max(...slots.map((s) => s.pop));
+    const cut = max >= 50 ? 50 : Math.max(1, max - 15);
+    const picked = slots.filter((s) => s.pop >= cut);
+    const morning = picked.some((s) => s.hour >= 6 && s.hour < 12);
+    const afternoon = picked.some((s) => s.hour >= 12 && s.hour < 18);
+    const night = picked.some((s) => s.hour >= 18 || s.hour < 6);
+    let when = '';
+    if (morning && afternoon && night) when = 'through the day and tonight';
+    else if (morning && afternoon) when = 'all day';
+    else if (afternoon && night) when = 'this afternoon and tonight';
+    else if (morning && night) when = 'this morning and tonight';
+    else if (morning) when = 'this morning';
+    else if (afternoon) when = 'this afternoon';
+    else if (night) when = 'tonight';
+    const pop = Math.round(Math.max(...picked.map((s) => s.pop)));
+    const precip = picked.reduce((sum, s) => sum + s.precip, 0);
+    const hours = picked.map((s) => ({ pop: s.pop, code: s.code }));
+    return { when, pop, precip, hours };
+  },
+
   formatTime(isoString, tz) {
     const d = isoString instanceof Date ? isoString : new Date(isoString);
     let out;

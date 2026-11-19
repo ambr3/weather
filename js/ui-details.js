@@ -259,30 +259,28 @@ Object.assign(UI, {
     if (windSec) windSec.classList.add('hidden');
   },
 
-  // Highest chance across every hour of a date, including night.
-  daytimeMaxPop(dateStr, hourly) {
-    if (!hourly || !hourly.time || !hourly.precipitation_probability) return null;
-    const prefix = dateStr + 'T';
-    let max = null;
-    for (let k = 0; k < hourly.time.length; k++) {
-      if (!String(hourly.time[k] || '').startsWith(prefix)) continue;
-      const p = hourly.precipitation_probability[k];
-      if (p != null && (max == null || p > max)) max = p;
-    }
-    return max;
+  // Highest chance in the window, plus whether any hourly stamps are in it.
+  // Today (fromMs set) runs from the current hour through the end of tonight,
+  // including the next date's 00–05. Omit fromMs for a later day's own hours.
+  daytimeMaxPop(dateStr, hourly, fromMs) {
+    return Utils.windowMaxPop(dateStr, hourly, fromMs, this._tz);
   },
 
-  // The day's rain chance is Open-Meteo's daily maximum, night hours included.
-  // Shown even when the rain total is 0. Falls back to the highest hour.
+  // Today's chance is the highest hourly chance from now through tonight,
+  // same window as the strip and the Now sentence. Later days use that day's
+  // own hours. The daily maximum is a fallback only when today's window has
+  // no hourly stamps at all, or when a later day has no hourly chances — not
+  // when today's stamps exist but every probability is null or the remaining
+  // hours are drier than rain that already fell.
   meaningfulDayPop(dateStr, daily, hourly) {
-    if (!daily || !daily.time) return null;
-    const idx = daily.time.indexOf(String(dateStr));
-    const dailyMax = idx >= 0 && daily.precipitation_probability_max
-      ? daily.precipitation_probability_max[idx]
-      : null;
-    const pop = dailyMax != null ? dailyMax : this.daytimeMaxPop(dateStr, hourly);
-    if (pop == null || pop <= 0) return null;
-    return Math.round(pop);
+    const isToday = String(dateStr) === this._todayDateKey();
+    const span = this.daytimeMaxPop(dateStr, hourly, isToday ? Date.now() : null);
+    let dailyMax = null;
+    if (daily && daily.time) {
+      const idx = daily.time.indexOf(String(dateStr));
+      if (idx >= 0 && daily.precipitation_probability_max) dailyMax = daily.precipitation_probability_max[idx];
+    }
+    return Utils.resolveDayPop(span, isToday, dailyMax);
   },
 
   // Chance for the current hour. Current weather has no chance of its own,
@@ -302,6 +300,8 @@ Object.assign(UI, {
 
   // Day row and day modal: icon is the daylight sky (same hour rule), not
   // Open-Meteo's most severe daily code and not a single wet hour.
+  // Today uses hours still ahead so the row matches the Now card.
+  // Later days keep the full day.
   dayOutlook(dateStr, daily, hourly, units) {
     if (!daily || !daily.time || dateStr == null) return null;
     const idx = daily.time.indexOf(String(dateStr));
@@ -309,8 +309,10 @@ Object.assign(UI, {
     const pop = this.meaningfulDayPop(dateStr, daily, hourly);
     const rainSum = daily.rain_sum && daily.rain_sum[idx] != null ? daily.rain_sum[idx] : 0;
     const snowSum = daily.snowfall_sum && daily.snowfall_sum[idx] != null ? daily.snowfall_sum[idx] : 0;
-    const iconCode = WeatherIcons.dayIcon(dateStr, hourly);
-    const kind = WeatherIcons.dayPrecipWord(dateStr, hourly);
+    const isToday = String(dateStr) === this._todayDateKey();
+    const nowMs = isToday ? Date.now() : null;
+    const iconCode = WeatherIcons.dayIcon(dateStr, hourly, nowMs, this._tz);
+    const kind = WeatherIcons.dayPrecipWord(dateStr, hourly, nowMs, this._tz);
     return { idx, pop, rainSum, snowSum, iconCode, kind };
   },
 

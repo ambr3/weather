@@ -250,6 +250,183 @@ const fri = {
   snowfall: [0, 0, 0],
   cloud_cover: [90, 80, 100],
 };
+const rainHours = {
+  time: ['2026-11-19T09:00', '2026-11-19T15:00', '2026-11-19T21:00'],
+  precipitation_probability: [10, 100, 5],
+};
+const afternoon = Utils.rainTiming('2026-11-19', rainHours, null, 'UTC');
+if (afternoon.when !== 'this afternoon' || afternoon.pop !== 100) {
+  console.error('rain timing afternoon', afternoon); process.exit(1);
+}
+const allDayHours = {
+  time: ['2026-11-19T08:00', '2026-11-19T14:00', '2026-11-19T20:00'],
+  precipitation_probability: [80, 90, 70],
+  precipitation: [1, 2, 1],
+};
+const allDay = Utils.rainTiming('2026-11-19', allDayHours, null, 'UTC');
+if (allDay.when !== 'through the day and tonight' || allDay.pop !== 90) {
+  console.error('rain timing all day', allDay); process.exit(1);
+}
+const tonight = Utils.rainTiming('2026-11-19', {
+  time: ['2026-11-19T16:00', '2026-11-19T22:00', '2026-11-19T23:00'],
+  precipitation_probability: [10, 29, 27],
+  precipitation: [0, 0.4, 0.2],
+}, null, 'UTC');
+if (tonight.when !== 'tonight' || tonight.pop !== 29) {
+  console.error('rain timing must follow the hourly peak, not a daily 100%', tonight); process.exit(1);
+}
+// Past 02:00 at 100% must not set the cut. Upcoming 20:00–23:00 is the rain
+// still on the strip: tonight, peak 29%, millimetres from those hours only.
+const pastNow = Utils.parseLocal('2026-11-19T15:00', 'UTC').getTime();
+const pastHundred = Utils.rainTiming('2026-11-19', {
+  time: [
+    '2026-11-19T02:00',
+    '2026-11-19T20:00',
+    '2026-11-19T21:00',
+    '2026-11-19T22:00',
+    '2026-11-19T23:00',
+  ],
+  precipitation_probability: [100, 24, 27, 29, 29],
+  precipitation: [5.7, 0.4, 0.8, 1.1, 1.3],
+}, pastNow, 'UTC');
+if (pastHundred.pop === 100 || pastHundred.when !== 'tonight' || pastHundred.pop !== 29) {
+  console.error('past 100% must not override upcoming tonight', pastHundred); process.exit(1);
+}
+if (Math.round(pastHundred.precip * 10) / 10 !== 3.6) {
+  console.error('precip must sum the upcoming tonight hours, not the past hour', pastHundred);
+  process.exit(1);
+}
+// From 21:00, tonight includes the next date's 00–05 and skips 06:00.
+// Peak is 60% at 02:00 (rain); 08:00 snow is already past.
+const eveningMs = Utils.parseLocal('2026-11-19T21:00', 'UTC').getTime();
+const overnight = Utils.rainTiming('2026-11-19', {
+  time: [
+    '2026-11-19T08:00',
+    '2026-11-19T21:00',
+    '2026-11-19T23:00',
+    '2026-11-20T02:00',
+    '2026-11-20T05:00',
+    '2026-11-20T06:00',
+  ],
+  precipitation_probability: [90, 30, 40, 60, 55, 95],
+  precipitation: [4, 0.2, 0.3, 1.1, 0.4, 8],
+  weather_code: [71, 61, 61, 61, 3, 95],
+}, eveningMs, 'UTC');
+if (overnight.when !== 'tonight' || overnight.pop !== 60) {
+  console.error('tonight must include next-day 00–05 and not 06:00', overnight); process.exit(1);
+}
+if (Math.round(overnight.precip * 10) / 10 !== 1.5) {
+  console.error('overnight precip must sum the hours that set the phrase', overnight); process.exit(1);
+}
+if (WeatherIcons.kindFromHours(overnight.hours) !== 'rain') {
+  console.error('Now sentence word must follow the upcoming peak, not past snow', overnight);
+  process.exit(1);
+}
+if (WeatherIcons.kindFromHours([{ pop: 80, code: 71 }, { pop: 55, code: 51 }]) !== 'snow') {
+  console.error('highest-chance hour wins; drizzle counts as rain'); process.exit(1);
+}
+if (WeatherIcons.kindFromHours([{ pop: 70, code: 3 }]) !== 'rain') {
+  console.error('no wet code in the set stays rain'); process.exit(1);
+}
+if (WeatherIcons.kindFromHours([{ pop: 70, code: 3 }, { pop: 60, code: 71 }]) !== 'snow') {
+  console.error('snow in the set beats a dry higher chance'); process.exit(1);
+}
+if (Utils.resolveDayPop({ max: null, hasHours: true }, true, 90) !== null) {
+  console.error('today with null hourly chances must not use the daily max'); process.exit(1);
+}
+if (Utils.resolveDayPop({ max: null, hasHours: false }, true, 90) !== 90) {
+  console.error('today with no hourly stamps may use the daily max'); process.exit(1);
+}
+if (Utils.resolveDayPop({ max: 60, hasHours: true }, true, 90) !== 60) {
+  console.error('today uses the forward-window chance'); process.exit(1);
+}
+if (Utils.resolveDayPop({ max: null, hasHours: true }, false, 80) !== 80) {
+  console.error('later day with no hourly chances may use the daily max'); process.exit(1);
+}
+if (WeatherIcons.kindFromHours([{ pop: 90, code: 95 }]) !== 'thunder') {
+  console.error('thunder word'); process.exit(1);
+}
+const overnightPop = Utils.windowMaxPop('2026-11-19', {
+  time: ['2026-11-19T15:00', '2026-11-19T21:00', '2026-11-20T02:00', '2026-11-20T06:00'],
+  precipitation_probability: [80, 20, 60, 95],
+}, Utils.parseLocal('2026-11-19T18:00', 'UTC').getTime(), 'UTC');
+if (overnightPop.max !== 60) {
+  console.error('today window should include 00–05 and skip past and next morning', overnightPop);
+  process.exit(1);
+}
+const nullWindow = Utils.windowMaxPop('2026-11-19', {
+  time: ['2026-11-19T21:00', '2026-11-20T02:00', '2026-11-20T08:00'],
+  precipitation_probability: [null, null, 90],
+}, eveningMs, 'UTC');
+if (!nullWindow.hasHours || nullWindow.max != null) {
+  console.error('null chances in the forward window must not invent a max', nullWindow);
+  process.exit(1);
+}
+const noStamps = Utils.windowMaxPop('2026-11-19', {
+  time: ['2026-11-18T12:00'],
+  precipitation_probability: [70],
+}, null, 'UTC');
+if (noStamps.hasHours || noStamps.max != null) {
+  console.error('window with no stamps', noStamps); process.exit(1);
+}
+const laterDay = Utils.windowMaxPop('2026-11-20', {
+  time: ['2026-11-20T02:00', '2026-11-20T14:00', '2026-11-21T02:00'],
+  precipitation_probability: [10, 40, 99],
+}, null, 'UTC');
+if (laterDay.max !== 40) {
+  console.error('later day must use only its own hours', laterDay); process.exit(1);
+}
+if (Utils.rollHour24('2026', '11', '19', '24') !== '2026-11-20T00') {
+  console.error('hour 24 must roll to next midnight', Utils.rollHour24('2026', '11', '19', '24'));
+  process.exit(1);
+}
+if (Utils.rollHour24('2026', '12', '31', '24') !== '2027-01-01T00') {
+  console.error('hour 24 must roll the year', Utils.rollHour24('2026', '12', '31', '24'));
+  process.exit(1);
+}
+if (Utils.rollHour24('2026', '11', '19', '23') !== '2026-11-19T23') {
+  console.error('hour 23 must not roll', Utils.rollHour24('2026', '11', '19', '23'));
+  process.exit(1);
+}
+const realDtf = Utils._dtf;
+Utils._dtf = function () {
+  return { formatToParts() {
+    return [
+      { type: 'year', value: '2026' },
+      { type: 'month', value: '11' },
+      { type: 'day', value: '19' },
+      { type: 'hour', value: '24' },
+    ];
+  } };
+};
+const rolledKey = Utils.hourKey(Date.UTC(2026, 10, 19, 0, 0), 'UTC');
+Utils._dtf = realDtf;
+if (rolledKey !== '2026-11-20T00') {
+  console.error('hourKey must roll hour 24 onto the next date', rolledKey); process.exit(1);
+}
+const skyAhead = {
+  time: ['2026-11-19T08:00', '2026-11-19T10:00', '2026-11-19T12:00', '2026-11-19T15:00', '2026-11-19T21:00'],
+  is_day: [1, 1, 1, 1, 0],
+  weather_code: [3, 3, 3, 1, 0],
+  precipitation_probability: [0, 0, 0, 0, 0],
+  precipitation: [0, 0, 0, 0, 0],
+  snowfall: [0, 0, 0, 0, 0],
+  cloud_cover: [90, 90, 90, 20, 0],
+};
+if (WeatherIcons.dayIcon('2026-11-19', skyAhead) !== 3) {
+  console.error('full day sky should stay overcast', WeatherIcons.dayIcon('2026-11-19', skyAhead));
+  process.exit(1);
+}
+const at1500 = Utils.parseLocal('2026-11-19T15:00', 'UTC').getTime();
+if (WeatherIcons.dayIcon('2026-11-19', skyAhead, at1500, 'UTC') !== 1) {
+  console.error('today sky must ignore daylight hours already past', WeatherIcons.dayIcon('2026-11-19', skyAhead, at1500, 'UTC'));
+  process.exit(1);
+}
+const at2100 = Utils.parseLocal('2026-11-19T21:00', 'UTC').getTime();
+if (WeatherIcons.dayIcon('2026-11-19', skyAhead, at2100, 'UTC') !== 0) {
+  console.error('after dark, sky uses the remaining hours', WeatherIcons.dayIcon('2026-11-19', skyAhead, at2100, 'UTC'));
+  process.exit(1);
+}
 if (WeatherIcons.dayIcon('2026-11-20', fri) !== 3) {
   console.error('low-chance drizzle day should stay overcast', WeatherIcons.dayIcon('2026-11-20', fri));
   process.exit(1);

@@ -4,7 +4,11 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
-- Now, hourly, and daily icons share one rule: rain, drizzle, snow, or thunder only when the chance is at least 50% and some precipitation is forecast. Otherwise the sky stays a cloud or sun, and the percentage is still shown. One wet hour no longer renames the day. The Now chance is this hour, not the day's highest.
+## 0.8.3 — 2026-11-19
+
+- Rain, drizzle, snow, and thunder show only when the chance is at least 50% and some precipitation is forecast. Below that the sky stays cloud or sun, and the percentage is still shown. One wet hour no longer renames the day. The Now chance is this hour.
+- The Now card states today's outlook in a sentence, including whether rain is this morning, this afternoon, tonight, or all day. The day detail no longer repeats that sentence.
+- Tonight's chance includes the hours after midnight still on the hourly strip, and the sentence uses that same upcoming rain, snow, or sky.
 
 ## 0.8.2 — 2026-11-17
 

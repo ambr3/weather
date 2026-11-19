@@ -24,14 +24,21 @@ Object.assign(UI, {
     const todayPair = Utils.dayNightTemps(d, data.hourly, 0, this._tz);
     const dayHigh = todayPair.high != null ? Utils.formatTemp(todayPair.high, units) : null;
     const dayLow = todayPair.low != null ? Utils.formatTemp(todayPair.low, units) : null;
-    const windUnit = Utils.getWindUnit(UI.windUnit);
-    const dayWind = c.wind_speed_10m != null ? `${Math.round(c.wind_speed_10m)} ${windUnit}` : null;
-    const summaryParts = [];
-    if (dayHigh && dayLow) summaryParts.push(`High ${dayHigh} / Low ${dayLow}`);
-    if (nowPop != null && nowPop > 0) summaryParts.push(`${nowPop}% ${WeatherIcons.precipWord(c.weather_code)}`);
-    if (dayWind) summaryParts.push(`Wind ${dayWind}`);
-    const daySummary = summaryParts.length ? summaryParts.join(' · ') : '';
+    const todayKey = (d.time && d.time[0]) ? d.time[0] : this._todayDateKey();
+    const outlook = this.dayOutlook(todayKey, d, data.hourly, units);
+    const rain = Utils.rainTiming(todayKey, data.hourly, Date.now(), this._tz);
+    const outlookText = outlook ? this._dayStory({
+      weekday: 'Today',
+      desc: Utils.getWeatherDescription(outlook.iconCode),
+      high: dayHigh || '—',
+      low: dayLow || '—',
+      pop: rain.pop,
+      rainLabel: Utils.formatPrecip(rain.precip, units),
+      kind: WeatherIcons.kindFromHours(rain.hours),
+      when: rain.when,
+    }) : '';
 
+    const windUnit = Utils.getWindUnit(UI.windUnit);
     const SUN_R = 42;
     const MOON_R = 36;
     const sunOrb = this._orbitFor(d.sunrise && d.sunrise[0], d.sunset && d.sunset[0], this._tz, SUN_R);
@@ -76,8 +83,8 @@ Object.assign(UI, {
       </div>
       <div class="current-weather__temp-row">
         <div class="current-weather__temp">${this._esc(temp)}</div>
-        ${daySummary ? `<div class="current-weather__summary">${this._esc(daySummary)}</div>` : ''}
       </div>
+      ${outlookText ? `<p class="current-weather__outlook">${this._esc(outlookText)}</p>` : ''}
       <div class="current-weather__meta">
         <div class="current-weather__feels">Feels like ${this._esc(feels)}</div>
       </div>

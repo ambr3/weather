@@ -61,6 +61,36 @@ const WeatherIcons = {
     return 'rain';
   },
 
+  // Word for the Now sentence: precip type on the highest-chance wet hour
+  // in the set that set the time phrase. No wet code in that set → rain.
+  kindFromHours(hours) {
+    let best = null;
+    let bestPop = -1;
+    const list = Array.isArray(hours) ? hours : [];
+    for (let i = 0; i < list.length; i++) {
+      const h = list[i];
+      if (!h || !this._isWet(h.code)) continue;
+      const pop = Number(h.pop);
+      if (!Number.isFinite(pop) || pop <= bestPop) continue;
+      bestPop = pop;
+      best = this.precipWord(h.code);
+    }
+    return best || 'rain';
+  },
+
+  _nowKey(nowMs, tz) {
+    if (nowMs == null || !Number.isFinite(Number(nowMs))) return '';
+    if (typeof Utils === 'undefined' || !Utils.hourKey) return '';
+    return Utils.hourKey(Number(nowMs), tz);
+  },
+
+  _inWindow(stamp, dateStr, nowKey) {
+    if (typeof Utils !== 'undefined' && Utils.hourInWindow) {
+      return Utils.hourInWindow(stamp, dateStr, nowKey);
+    }
+    return String(stamp || '').startsWith(String(dateStr) + 'T');
+  },
+
   // Sky to show when a wet code is withheld. Same bands for every card.
   skyFromCover(cover) {
     const n = Number(cover);
@@ -85,13 +115,16 @@ const WeatherIcons = {
 
   // Day icon: the sky that covers the daylight hours, each hour judged by hourIcon.
   // One wet hour does not rename the day. Ties lean toward the clearer code.
-  dayIcon(dateStr, hourly) {
+  // nowMs (today only) keeps hours still ahead — the same window as the chance.
+  // Daylight hours in that window win when any remain; otherwise the remaining
+  // hours, including night. Omit nowMs for a later day's full daylight.
+  dayIcon(dateStr, hourly, nowMs, tz) {
     if (!hourly || !hourly.time || !hourly.weather_code || dateStr == null) return 3;
-    const prefix = String(dateStr) + 'T';
+    const nowKey = this._nowKey(nowMs, tz);
     const collect = (daylightOnly) => {
       const codes = [];
       for (let k = 0; k < hourly.time.length; k++) {
-        if (!String(hourly.time[k] || '').startsWith(prefix)) continue;
+        if (!this._inWindow(hourly.time[k], dateStr, nowKey)) continue;
         if (daylightOnly && hourly.is_day && hourly.is_day[k] === 0) continue;
         const wc = hourly.weather_code[k];
         if (wc == null) continue;
@@ -126,13 +159,14 @@ const WeatherIcons = {
   },
 
   // Most common wet kind in the day's daylight hours, for the chance line.
-  dayPrecipWord(dateStr, hourly) {
+  // nowMs limits today to hours still ahead, same window as dayIcon.
+  dayPrecipWord(dateStr, hourly, nowMs, tz) {
     if (!hourly || !hourly.time || !hourly.weather_code || dateStr == null) return 'rain';
-    const prefix = String(dateStr) + 'T';
+    const nowKey = this._nowKey(nowMs, tz);
     const counts = {};
     const add = (daylightOnly) => {
       for (let k = 0; k < hourly.time.length; k++) {
-        if (!String(hourly.time[k] || '').startsWith(prefix)) continue;
+        if (!this._inWindow(hourly.time[k], dateStr, nowKey)) continue;
         if (daylightOnly && hourly.is_day && hourly.is_day[k] === 0) continue;
         const wc = hourly.weather_code[k];
         if (!this._isWet(wc)) continue;

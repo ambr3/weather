@@ -346,27 +346,21 @@ Object.assign(UI, {
     return `<div class="hourly-modal__row"><span class="hourly-modal__row-label">${safeLabel}</span><span class="hourly-modal__row-value">${safeValue}</span></div>`;
   },
 
-  // Day blurb: sky + temps + rain chance (sun times stay in the list). Max ~5 lines in CSS.
-  _dayStory({ weekday, desc, high, low, pop, rainLabel, kind }) {
+  // Day blurb: sky + temps + chance. Used on the Now card and the day modal.
+  _dayStory({ weekday, desc, high, low, pop, rainLabel, kind, when }) {
     const dayName = weekday === 'Today' ? 'Today' : weekday;
     const sky = (desc || 'mixed conditions').toLowerCase();
-    const looksOk = /^(clear sky|mainly clear|partly cloudy|overcast)$/.test(sky);
     const what = kind === 'snow' || kind === 'thunder' ? kind : 'rain';
-    let open;
-    if (high !== '—' && low !== '—') {
-      open = looksOk
-        ? `${dayName} looks ${sky}, warming to ${high} and cooling to ${low}.`
-        : `${dayName} brings ${sky}, warming to ${high} and cooling to ${low}.`;
-    } else if (high !== '—') {
-      open = looksOk
-        ? `${dayName} looks ${sky}, near ${high}.`
-        : `${dayName} brings ${sky}, near ${high}.`;
-    } else {
-      open = looksOk ? `${dayName} looks ${sky}.` : `${dayName} brings ${sky}.`;
-    }
-    if (rainLabel && pop > 0) open += ` Expect about a ${Math.round(pop)}% chance of ${what} (~${rainLabel}).`;
-    else if (rainLabel) open += ` Expect around ${rainLabel} of ${what}.`;
-    else if (pop > 0) open += ` ${what.charAt(0).toUpperCase()}${what.slice(1)} chance about ${Math.round(pop)}%.`;
+    const whenBit = when ? ` ${when}` : '';
+    let open = `${dayName} is ${sky}`;
+    if (high !== '—' && low !== '—') open += `, reaching ${high} and falling to ${low}`;
+    else if (high !== '—') open += `, reaching ${high}`;
+    else if (low !== '—') open += `, falling to ${low}`;
+    open += '.';
+    const chance = pop >= 100 ? `A ${Math.round(pop)}% chance` : `About a ${Math.round(pop)}% chance`;
+    if (pop > 0 && rainLabel) open += ` ${chance} of ${what}${whenBit}, around ${rainLabel}.`;
+    else if (pop > 0) open += ` ${chance} of ${what}${whenBit}.`;
+    else if (rainLabel) open += ` Around ${rainLabel} of ${what}${whenBit}.`;
     return open;
   },
 
@@ -464,9 +458,6 @@ Object.assign(UI, {
     const sunset = d.sunset && d.sunset[modalIndex] ? Utils.formatTime(d.sunset[modalIndex], this._tz) : null;
     const tempMaxRaw = pair.high;
     const tempTone = tempMaxRaw != null ? Utils.getTempTone(tempMaxRaw, units) : null;
-    const iconCode = outlook ? outlook.iconCode : WeatherIcons.dayIcon(date, this._forecastHourly);
-    const kind = outlook && outlook.kind ? outlook.kind : WeatherIcons.dayPrecipWord(date, this._forecastHourly);
-    const desc = Utils.getWeatherDescription(iconCode);
     const feelsHighRaw = pair.feelsHigh;
     const feelsVal = feelsHigh != null && feelsLow != null
       ? (feelsHighRaw != null
@@ -474,29 +465,25 @@ Object.assign(UI, {
           : `${feelsHigh} / ${feelsLow}`)
       : null;
     const parsed = Utils.parseLocal(date + 'T00:00:00', this._tz);
-    const weekdayLong = modalIndex === 0 ? 'Today' : parsed.toLocaleDateString('en-US', { timeZone: this._tz || undefined, weekday: 'long' });
     const weekdayShort = modalIndex === 0 ? 'Today' : parsed.toLocaleDateString('en-US', { timeZone: this._tz || undefined, weekday: 'short' });
     const dateHeading = parsed.toLocaleDateString('en-US', { timeZone: this._tz || undefined, month: 'short', day: 'numeric' });
     const rainZero = units === 'imperial' ? '0 in' : '0 mm';
     const rainLabel = Utils.formatPrecip(rainSum, units) || rainZero;
-    const storyRain = Utils.formatPrecip(rainSum, units);
-    const summary = this._dayStory({
-      weekday: weekdayLong, desc, high, low, pop, rainLabel: storyRain, kind,
-    });
+    const sunRaw = d.sunshine_duration && d.sunshine_duration[modalIndex];
+    const sunshineLabel = sunRaw === 0 ? 'None' : sunshine;
     const row = (label, value, opts) => this._statRow(label, value, opts);
     const feelsHtml = feelsHigh != null && feelsLow != null && feelsHighRaw != null;
     return `
       <div class="hourly-modal__pane">
         <div class="hourly-modal__head">${this._esc(weekdayShort)} · ${this._esc(dateHeading)}</div>
         <div class="hourly-modal__temp${tempTone ? ` temp-tone-${tempTone}` : ''}">${this._esc(high)}<span class="hourly-modal__temp-low"> / ${this._esc(low)}</span></div>
-        <div class="hourly-modal__summary">${summary ? this._esc(summary) : ''}</div>
         <div class="hourly-modal__list">
           ${row('Feels like', feelsVal, { html: feelsHtml })}
           ${row('Chance', pop > 0 ? `${Math.round(pop)}%` : null)}
           ${row('Rainfall', rainLabel)}
           ${row('Sunrise', sunrise)}
           ${row('Sunset', sunset)}
-          ${row('Sunshine', sunshine)}
+          ${row('Sunshine', sunshineLabel)}
           ${row('Daylight', daylight)}
         </div>
       </div>`;

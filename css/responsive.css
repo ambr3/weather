@@ -73,10 +73,8 @@
     gap: 0.6rem;
   }
 
-  .current-weather__summary {
-    font-size: 0.74rem;
-    padding: 0.28rem 0.65rem;
-    max-width: 100%;
+  .current-weather__outlook {
+    font-size: 0.9rem;
   }
 
   .hourly-chart__modes {
@@ -171,9 +169,8 @@
     gap: 0.5rem;
   }
 
-  .current-weather__summary {
-    font-size: 0.72rem;
-    padding: 0.2rem 0.45rem;
+  .current-weather__outlook {
+    font-size: 0.88rem;
   }
 
   .current-weather__feels {
