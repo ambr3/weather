@@ -209,6 +209,12 @@ const UI = {
     if (!cur) return null;
     const startIdx = this._hourlyStartIdx(hourly);
     const pop = this._meaningfulNowPop(cur, hourly, startIdx);
+    const amount = (curKey, hourKey) => {
+      if (cur[curKey] != null && Number.isFinite(Number(cur[curKey]))) return Number(cur[curKey]);
+      if (hourly && hourly[hourKey] && startIdx != null && hourly[hourKey][startIdx] != null
+        && Number.isFinite(Number(hourly[hourKey][startIdx]))) return Number(hourly[hourKey][startIdx]);
+      return 0;
+    };
     return {
       pop,
       temp: cur.temperature_2m != null ? Utils.formatTemp(cur.temperature_2m, units) : null,
@@ -219,15 +225,18 @@ const UI = {
       wind: cur.wind_speed_10m != null ? Math.round(cur.wind_speed_10m) : null,
       windDir: cur.wind_direction_10m != null ? Math.round(cur.wind_direction_10m) : null,
       gust: cur.wind_gusts_10m != null ? Math.round(cur.wind_gusts_10m) : null,
-      precip: cur.precipitation != null ? cur.precipitation : null,
-      snow: cur.snowfall != null ? cur.snowfall : null,
+      precip: amount('precipitation', 'precipitation'),
+      snow: amount('snowfall', 'snowfall'),
       dew: cur.dew_point_2m != null ? Utils.formatTemp(cur.dew_point_2m, units) : null,
       pressure: cur.pressure_msl != null ? Utils.formatPressure(cur.pressure_msl, UI.pressUnit) : null,
       cloud: cur.cloud_cover != null ? `${Math.round(cur.cloud_cover)}%` : null,
-      cloudCover: cur.cloud_cover != null ? cur.cloud_cover : null,
+      cloudCover: cur.cloud_cover != null ? cur.cloud_cover
+        : (hourly && hourly.cloud_cover && startIdx != null && hourly.cloud_cover[startIdx] != null
+          ? hourly.cloud_cover[startIdx] : null),
       visibility: cur.visibility != null ? Utils.formatVisibility(cur.visibility, UI.visUnit) : null,
       cape: cur.cape != null ? cur.cape : null,
-      code: cur.weather_code != null ? cur.weather_code : null,
+      code: cur.weather_code != null ? cur.weather_code
+        : (hourly && hourly.weather_code ? hourly.weather_code[startIdx] : null),
       isDay: cur.is_day != null ? cur.is_day : null,
     };
   },

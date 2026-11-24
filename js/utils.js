@@ -183,6 +183,15 @@ const Utils = {
     return `${y}-${m}-${d}T${h}`;
   },
 
+  // Hour on dateStr only. nowKey set: from the current hour forward.
+  // Past hours stay out. The next calendar day does not count.
+  hourOnDate(stamp, dateStr, nowKey) {
+    const t = String(stamp || '');
+    if (t.length < 13 || !dateStr || !t.startsWith(String(dateStr) + 'T')) return false;
+    if (nowKey && t.slice(0, 13) < nowKey) return false;
+    return true;
+  },
+
   // Hourly stamp in the window for dateStr.
   // nowKey set: that date from the current hour forward, plus the next
   // date's 00–05 (tonight after midnight). Past hours stay out.
@@ -199,16 +208,17 @@ const Utils = {
     return hour >= 0 && hour < 6;
   },
 
-  // Highest precipitation_probability in the same window as rainTiming.
-  // hasHours is true when that window contains time stamps, even if every
-  // probability is null.
+  // Highest precipitation_probability on that calendar day.
+  // Today (nowMs set) starts at the current hour. The next morning is
+  // tomorrow's figure. hasHours is true when the day has time stamps,
+  // even if every probability is null.
   windowMaxPop(dateStr, hourly, nowMs, tz) {
     const out = { max: null, hasHours: false };
     if (!dateStr || !hourly || !Array.isArray(hourly.time)) return out;
     const nowKey = nowMs != null && Number.isFinite(Number(nowMs)) ? this.hourKey(Number(nowMs), tz) : '';
     const probs = hourly.precipitation_probability;
     for (let k = 0; k < hourly.time.length; k++) {
-      if (!this.hourInWindow(hourly.time[k], dateStr, nowKey)) continue;
+      if (!this.hourOnDate(hourly.time[k], dateStr, nowKey)) continue;
       out.hasHours = true;
       const p = probs ? probs[k] : null;
       if (p != null && Number.isFinite(Number(p)) && (out.max == null || Number(p) > out.max)) out.max = Number(p);
@@ -216,26 +226,23 @@ const Utils = {
     return out;
   },
 
-  // Daily maximum fills in only when the window has nothing hourly to say.
-  // Today with stamps — even if every chance is null — does not use it.
+  // Daily maximum fills in only when that day has no hourly stamps.
+  // Stamps with a null or zero chance do not fall through to the daily maximum.
   resolveDayPop(span, isToday, dailyMax) {
     if (span && span.max != null && span.max > 0) return Math.round(span.max);
-    if (isToday && span && span.hasHours) return null;
+    if (span && span.hasHours) return null;
     if (dailyMax == null || !(Number(dailyMax) > 0)) return null;
     return Math.round(Number(dailyMax));
   },
 
-  // Timing, chance, and amount from hourly chances still ahead — the same
-  // hours the strip shows from Now, including tonight after midnight
-  // (next date 00:00–05:59). Not the daily maximum, and not hours already
-  // before the current hour. nowMs (epoch) drops those past hours and opens
-  // the post-midnight tail; omit it to use every hour of the date only.
-  // The percentage is the highest chance among the hours that justify the
-  // time phrase; millimetres are the sum of precipitation on those same
-  // hours. hours is that set (chance + weather code) for the Now sentence.
-  rainTiming(dateStr, hourly, nowMs, tz) {
+  // Timing, chance, and amount from hours still ahead whose icon is wet.
+  // A cloud or sun hour does not set the percentage, the time, or the millimetres.
+  // Includes tonight after midnight (next date 00:00–05:59). Past hours stay out.
+  // nowObs, when set, is this hour's code and amount, same numbers as the Now icon.
+  rainTiming(dateStr, hourly, nowMs, tz, nowObs) {
     const empty = { when: '', pop: null, precip: null, hours: [] };
     if (!dateStr || !hourly || !hourly.time || !hourly.precipitation_probability) return empty;
+    if (typeof WeatherIcons === 'undefined' || !WeatherIcons.hourIcon) return empty;
     const nowKey = nowMs != null && Number.isFinite(Number(nowMs)) ? this.hourKey(Number(nowMs), tz) : '';
     const slots = [];
     for (let k = 0; k < hourly.time.length; k++) {
@@ -245,13 +252,27 @@ const Utils = {
       if (pop == null || !(Number(pop) > 0)) continue;
       const hour = Number(t.slice(11, 13));
       if (!Number.isFinite(hour)) continue;
-      const precip = hourly.precipitation && hourly.precipitation[k] != null ? Number(hourly.precipitation[k]) : 0;
-      const code = hourly.weather_code ? hourly.weather_code[k] : null;
+      let precip = hourly.precipitation && hourly.precipitation[k] != null ? Number(hourly.precipitation[k]) : 0;
+      let snow = hourly.snowfall && hourly.snowfall[k] != null ? Number(hourly.snowfall[k]) : 0;
+      let code = hourly.weather_code ? hourly.weather_code[k] : null;
+      let cloud = hourly.cloud_cover ? hourly.cloud_cover[k] : null;
+      if (nowObs && nowKey && t.slice(0, 13) === nowKey) {
+        if (nowObs.code != null) code = nowObs.code;
+        if (nowObs.precip != null && Number.isFinite(Number(nowObs.precip))) precip = Number(nowObs.precip);
+        if (nowObs.snow != null && Number.isFinite(Number(nowObs.snow))) snow = Number(nowObs.snow);
+        if (nowObs.cloud != null) cloud = nowObs.cloud;
+      }
+      if (!Number.isFinite(precip)) precip = 0;
+      if (!Number.isFinite(snow)) snow = 0;
+      const icon = WeatherIcons.hourIcon(code, pop, precip, snow, cloud);
+      if (!WeatherIcons._isWet(icon)) continue;
       slots.push({
         hour,
         pop: Number(pop),
-        precip: Number.isFinite(precip) ? precip : 0,
-        code,
+        precip,
+        snow,
+        code: icon,
+        cloud,
       });
     }
     if (!slots.length) return empty;
@@ -271,7 +292,9 @@ const Utils = {
     else if (night) when = 'tonight';
     const pop = Math.round(Math.max(...picked.map((s) => s.pop)));
     const precip = picked.reduce((sum, s) => sum + s.precip, 0);
-    const hours = picked.map((s) => ({ pop: s.pop, code: s.code }));
+    const hours = picked.map((s) => ({
+      pop: s.pop, code: s.code, precip: s.precip, snow: s.snow, cloud: s.cloud,
+    }));
     return { when, pop, precip, hours };
   },
 

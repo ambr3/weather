@@ -252,7 +252,10 @@ const fri = {
 };
 const rainHours = {
   time: ['2026-11-19T09:00', '2026-11-19T15:00', '2026-11-19T21:00'],
+  weather_code: [3, 61, 3],
   precipitation_probability: [10, 100, 5],
+  precipitation: [0, 2, 0],
+  cloud_cover: [100, 90, 40],
 };
 const afternoon = Utils.rainTiming('2026-11-19', rainHours, null, 'UTC');
 if (afternoon.when !== 'this afternoon' || afternoon.pop !== 100) {
@@ -260,8 +263,10 @@ if (afternoon.when !== 'this afternoon' || afternoon.pop !== 100) {
 }
 const allDayHours = {
   time: ['2026-11-19T08:00', '2026-11-19T14:00', '2026-11-19T20:00'],
+  weather_code: [61, 61, 61],
   precipitation_probability: [80, 90, 70],
   precipitation: [1, 2, 1],
+  cloud_cover: [90, 90, 90],
 };
 const allDay = Utils.rainTiming('2026-11-19', allDayHours, null, 'UTC');
 if (allDay.when !== 'through the day and tonight' || allDay.pop !== 90) {
@@ -269,31 +274,34 @@ if (allDay.when !== 'through the day and tonight' || allDay.pop !== 90) {
 }
 const tonight = Utils.rainTiming('2026-11-19', {
   time: ['2026-11-19T16:00', '2026-11-19T22:00', '2026-11-19T23:00'],
+  weather_code: [3, 3, 3],
   precipitation_probability: [10, 29, 27],
   precipitation: [0, 0.4, 0.2],
+  cloud_cover: [100, 90, 80],
 }, null, 'UTC');
-if (tonight.when !== 'tonight' || tonight.pop !== 29) {
-  console.error('rain timing must follow the hourly peak, not a daily 100%', tonight); process.exit(1);
+if (tonight.when || tonight.pop != null) {
+  console.error('sky hours under 50% must not become a rain sentence', tonight); process.exit(1);
 }
-// Past 02:00 at 100% must not set the cut. Upcoming 20:00–23:00 is the rain
-// still on the strip: tonight, peak 29%, millimetres from those hours only.
+// Past 02:00 at 100% must not set the phrase. The 60% rain hour does.
+// Overcast hours, even with a higher chance, do not.
 const pastNow = Utils.parseLocal('2026-11-19T15:00', 'UTC').getTime();
 const pastHundred = Utils.rainTiming('2026-11-19', {
   time: [
     '2026-11-19T02:00',
     '2026-11-19T20:00',
-    '2026-11-19T21:00',
     '2026-11-19T22:00',
     '2026-11-19T23:00',
   ],
-  precipitation_probability: [100, 24, 27, 29, 29],
-  precipitation: [5.7, 0.4, 0.8, 1.1, 1.3],
+  weather_code: [61, 3, 61, 3],
+  precipitation_probability: [100, 80, 60, 29],
+  precipitation: [5.7, 0, 1.1, 1.3],
+  cloud_cover: [90, 100, 90, 80],
 }, pastNow, 'UTC');
-if (pastHundred.pop === 100 || pastHundred.when !== 'tonight' || pastHundred.pop !== 29) {
-  console.error('past 100% must not override upcoming tonight', pastHundred); process.exit(1);
+if (pastHundred.pop === 100 || pastHundred.when !== 'tonight' || pastHundred.pop !== 60) {
+  console.error('past 100% and a cloudy 80% must not set the rain sentence', pastHundred); process.exit(1);
 }
-if (Math.round(pastHundred.precip * 10) / 10 !== 3.6) {
-  console.error('precip must sum the upcoming tonight hours, not the past hour', pastHundred);
+if (Math.round(pastHundred.precip * 10) / 10 !== 1.1) {
+  console.error('precip must sum only the wet-icon hour', pastHundred);
   process.exit(1);
 }
 // From 21:00, tonight includes the next date's 00–05 and skips 06:00.
@@ -315,21 +323,21 @@ const overnight = Utils.rainTiming('2026-11-19', {
 if (overnight.when !== 'tonight' || overnight.pop !== 60) {
   console.error('tonight must include next-day 00–05 and not 06:00', overnight); process.exit(1);
 }
-if (Math.round(overnight.precip * 10) / 10 !== 1.5) {
-  console.error('overnight precip must sum the hours that set the phrase', overnight); process.exit(1);
+if (Math.round(overnight.precip * 10) / 10 !== 1.1) {
+  console.error('overnight precip must sum the wet-icon hour only', overnight); process.exit(1);
 }
 if (WeatherIcons.kindFromHours(overnight.hours) !== 'rain') {
   console.error('Now sentence word must follow the upcoming peak, not past snow', overnight);
   process.exit(1);
 }
-if (WeatherIcons.kindFromHours([{ pop: 80, code: 71 }, { pop: 55, code: 51 }]) !== 'snow') {
-  console.error('highest-chance hour wins; drizzle counts as rain'); process.exit(1);
+if (WeatherIcons.kindFromHours([{ pop: 80, code: 71, snow: 1 }, { pop: 55, code: 51, precip: 0.4 }]) !== 'snow') {
+  console.error('highest-chance wet icon wins; drizzle counts as rain'); process.exit(1);
 }
-if (WeatherIcons.kindFromHours([{ pop: 70, code: 3 }]) !== 'rain') {
-  console.error('no wet code in the set stays rain'); process.exit(1);
+if (WeatherIcons.kindFromHours([{ pop: 70, code: 3, cloud: 100 }]) !== '') {
+  console.error('a cloud hour must not be called rain'); process.exit(1);
 }
-if (WeatherIcons.kindFromHours([{ pop: 70, code: 3 }, { pop: 60, code: 71 }]) !== 'snow') {
-  console.error('snow in the set beats a dry higher chance'); process.exit(1);
+if (WeatherIcons.kindFromHours([{ pop: 70, code: 3, cloud: 90 }, { pop: 60, code: 71, snow: 0.5 }]) !== 'snow') {
+  console.error('snow icon beats a dry higher chance'); process.exit(1);
 }
 if (Utils.resolveDayPop({ max: null, hasHours: true }, true, 90) !== null) {
   console.error('today with null hourly chances must not use the daily max'); process.exit(1);
@@ -340,18 +348,21 @@ if (Utils.resolveDayPop({ max: null, hasHours: false }, true, 90) !== 90) {
 if (Utils.resolveDayPop({ max: 60, hasHours: true }, true, 90) !== 60) {
   console.error('today uses the forward-window chance'); process.exit(1);
 }
-if (Utils.resolveDayPop({ max: null, hasHours: true }, false, 80) !== 80) {
-  console.error('later day with no hourly chances may use the daily max'); process.exit(1);
+if (Utils.resolveDayPop({ max: null, hasHours: true }, false, 80) !== null) {
+  console.error('later day with hourly stamps must not use the daily max'); process.exit(1);
 }
-if (WeatherIcons.kindFromHours([{ pop: 90, code: 95 }]) !== 'thunder') {
+if (Utils.resolveDayPop({ max: 0, hasHours: true }, false, 70) !== null) {
+  console.error('later day with zero hourly chances must not use the daily max'); process.exit(1);
+}
+if (WeatherIcons.kindFromHours([{ pop: 90, code: 95, precip: 1 }]) !== 'thunder') {
   console.error('thunder word'); process.exit(1);
 }
 const overnightPop = Utils.windowMaxPop('2026-11-19', {
   time: ['2026-11-19T15:00', '2026-11-19T21:00', '2026-11-20T02:00', '2026-11-20T06:00'],
   precipitation_probability: [80, 20, 60, 95],
 }, Utils.parseLocal('2026-11-19T18:00', 'UTC').getTime(), 'UTC');
-if (overnightPop.max !== 60) {
-  console.error('today window should include 00–05 and skip past and next morning', overnightPop);
+if (overnightPop.max !== 20) {
+  console.error('day chance stays on that date and skips past hours', overnightPop);
   process.exit(1);
 }
 const nullWindow = Utils.windowMaxPop('2026-11-19', {
@@ -418,8 +429,8 @@ if (WeatherIcons.dayIcon('2026-11-19', skyAhead) !== 3) {
   process.exit(1);
 }
 const at1500 = Utils.parseLocal('2026-11-19T15:00', 'UTC').getTime();
-if (WeatherIcons.dayIcon('2026-11-19', skyAhead, at1500, 'UTC') !== 1) {
-  console.error('today sky must ignore daylight hours already past', WeatherIcons.dayIcon('2026-11-19', skyAhead, at1500, 'UTC'));
+if (WeatherIcons.dayIcon('2026-11-19', skyAhead, at1500, 'UTC') !== 0) {
+  console.error('remaining hours vote together, including the night hour', WeatherIcons.dayIcon('2026-11-19', skyAhead, at1500, 'UTC'));
   process.exit(1);
 }
 const at2100 = Utils.parseLocal('2026-11-19T21:00', 'UTC').getTime();
@@ -429,6 +440,130 @@ if (WeatherIcons.dayIcon('2026-11-19', skyAhead, at2100, 'UTC') !== 0) {
 }
 if (WeatherIcons.dayIcon('2026-11-20', fri) !== 3) {
   console.error('low-chance drizzle day should stay overcast', WeatherIcons.dayIcon('2026-11-20', fri));
+  process.exit(1);
+}
+if (WeatherIcons.dayPrecipWord('2026-11-20', fri) !== '') {
+  console.error('sky day must not say rain', WeatherIcons.dayPrecipWord('2026-11-20', fri));
+  process.exit(1);
+}
+// Most hours overcast, fewer hours drizzle before sunrise. The day follows
+// the larger set. The word matches the icon, so it does not say rain.
+const mostlyCloud = {
+  time: [
+    '2026-11-27T00:00', '2026-11-27T01:00', '2026-11-27T02:00', '2026-11-27T03:00',
+    '2026-11-27T04:00', '2026-11-27T05:00', '2026-11-27T06:00', '2026-11-27T07:00', '2026-11-27T08:00', '2026-11-27T09:00',
+    '2026-11-27T14:00', '2026-11-27T15:00', '2026-11-27T16:00', '2026-11-27T17:00', '2026-11-27T18:00',
+  ],
+  is_day: [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0],
+  weather_code: [3, 3, 3, 3, 51, 51, 51, 51, 51, 51, 3, 3, 3, 3, 3],
+  precipitation_probability: [20, 30, 40, 63, 70, 75, 78, 79, 78, 75, 50, 49, 46, 42, 39],
+  precipitation: [0, 0, 0, 0, 0.3, 0.3, 0.3, 0.4, 0.4, 0.4, 0, 0, 0, 0, 0],
+  snowfall: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  cloud_cover: [100, 100, 100, 100, 100, 100, 98, 91, 82, 73, 83, 100, 100, 100, 100],
+};
+if (WeatherIcons.dayIcon('2026-11-27', mostlyCloud) !== 3) {
+  console.error('day icon must be the picture on the most hours', WeatherIcons.dayIcon('2026-11-27', mostlyCloud));
+  process.exit(1);
+}
+if (WeatherIcons.dayPrecipWord('2026-11-27', mostlyCloud) !== '') {
+  console.error('cloud day must not say rain', WeatherIcons.dayPrecipWord('2026-11-27', mostlyCloud));
+  process.exit(1);
+}
+// Pre-sunrise hours are part of the same vote. Drizzle here is the most
+// common picture only because those night hours count.
+const morningDrizzle = {
+  time: ['2026-11-27T04:00', '2026-11-27T05:00', '2026-11-27T06:00', '2026-11-27T07:00', '2026-11-27T08:00', '2026-11-27T09:00', '2026-11-27T12:00', '2026-11-27T13:00'],
+  is_day: [0, 0, 0, 0, 0, 1, 1, 1],
+  weather_code: [51, 53, 51, 55, 51, 51, 1, 1],
+  precipitation_probability: [70, 72, 74, 79, 76, 70, 20, 10],
+  precipitation: [0.2, 0.3, 0.3, 0.4, 0.3, 0.2, 0, 0],
+  snowfall: [0, 0, 0, 0, 0, 0, 0, 0],
+  cloud_cover: [90, 90, 90, 90, 80, 70, 20, 15],
+};
+if (WeatherIcons.dayIcon('2026-11-27', morningDrizzle) !== 51) {
+  console.error('pre-sunrise hours must vote with the rest of the day', WeatherIcons.dayIcon('2026-11-27', morningDrizzle));
+  process.exit(1);
+}
+if (WeatherIcons.dayPrecipWord('2026-11-27', morningDrizzle) !== 'rain') {
+  console.error('drizzle icon says rain', WeatherIcons.dayPrecipWord('2026-11-27', morningDrizzle));
+  process.exit(1);
+}
+const oneShower = {
+  time: ['2026-11-27T09:00', '2026-11-27T12:00', '2026-11-27T15:00'],
+  is_day: [1, 1, 1],
+  weather_code: [0, 61, 1],
+  precipitation_probability: [10, 80, 5],
+  precipitation: [0, 1, 0],
+  snowfall: [0, 0, 0],
+  cloud_cover: [0, 40, 20],
+};
+if (WeatherIcons.dayIcon('2026-11-27', oneShower) !== 0) {
+  console.error('one wet hour must not rename the day', WeatherIcons.dayIcon('2026-11-27', oneShower));
+  process.exit(1);
+}
+if (WeatherIcons.dayPrecipWord('2026-11-27', oneShower) !== '') {
+  console.error('one wet hour must not say rain', WeatherIcons.dayPrecipWord('2026-11-27', oneShower));
+  process.exit(1);
+}
+const twoSnow = {
+  time: ['2026-11-27T10:00', '2026-11-27T11:00', '2026-11-27T15:00'],
+  is_day: [1, 1, 1],
+  weather_code: [71, 73, 1],
+  precipitation_probability: [60, 55, 0],
+  precipitation: [0, 0, 0],
+  snowfall: [0.4, 0.3, 0],
+  cloud_cover: [90, 90, 20],
+};
+if (WeatherIcons.dayIcon('2026-11-27', twoSnow) !== 71) {
+  console.error('two snow hours should set the day icon', WeatherIcons.dayIcon('2026-11-27', twoSnow));
+  process.exit(1);
+}
+if (WeatherIcons.dayPrecipWord('2026-11-27', twoSnow) !== 'snow') {
+  console.error('snow day word', WeatherIcons.dayPrecipWord('2026-11-27', twoSnow));
+  process.exit(1);
+}
+const spills = {
+  time: [
+    '2026-11-19T20:00', '2026-11-19T21:00', '2026-11-19T22:00', '2026-11-19T23:00',
+    '2026-11-20T01:00', '2026-11-20T02:00', '2026-11-20T03:00', '2026-11-20T04:00',
+  ],
+  weather_code: [3, 3, 3, 3, 51, 51, 51, 51],
+  precipitation_probability: [10, 10, 10, 10, 80, 80, 80, 80],
+  precipitation: [0, 0, 0, 0, 0.4, 0.4, 0.4, 0.4],
+  snowfall: [0, 0, 0, 0, 0, 0, 0, 0],
+  cloud_cover: [100, 100, 100, 100, 90, 90, 90, 90],
+};
+const spillNow = Utils.parseLocal('2026-11-19T18:00', 'UTC').getTime();
+if (WeatherIcons.dayIcon('2026-11-19', spills, spillNow, 'UTC') !== 3) {
+  console.error('tomorrow morning must not set today', WeatherIcons.dayIcon('2026-11-19', spills, spillNow, 'UTC'));
+  process.exit(1);
+}
+if (WeatherIcons.dayIcon('2026-11-20', spills) !== 51) {
+  console.error('next morning belongs to the next day', WeatherIcons.dayIcon('2026-11-20', spills));
+  process.exit(1);
+}
+if (Utils.windowMaxPop('2026-11-19', spills, spillNow, 'UTC').max !== 10) {
+  console.error('today chance must not take tomorrow morning', Utils.windowMaxPop('2026-11-19', spills, spillNow, 'UTC'));
+  process.exit(1);
+}
+const shownSky = WeatherIcons.dayShownAmount('2026-11-20', fri);
+if (shownSky.word !== '' || shownSky.precip !== 0) {
+  console.error('a sky day must not report rain amount', shownSky); process.exit(1);
+}
+const shownRain = WeatherIcons.dayShownAmount('2026-11-19', allDayHours);
+if (shownRain.word !== 'rain' || shownRain.precip !== 4) {
+  console.error('rain amount must sum the hours that show rain', shownRain); process.exit(1);
+}
+const nowHour = Utils.parseLocal('2026-11-19T15:00', 'UTC').getTime();
+const overridden = Utils.rainTiming('2026-11-19', {
+  time: ['2026-11-19T15:00'],
+  weather_code: [61],
+  precipitation_probability: [80],
+  precipitation: [1.2],
+  cloud_cover: [40],
+}, nowHour, 'UTC', { code: 61, precip: 0, snow: 0, cloud: 40 });
+if (overridden.pop != null || overridden.when) {
+  console.error('current dry hour must not be called rain from the hourly amount', overridden);
   process.exit(1);
 }
 console.log('unit helpers ok');

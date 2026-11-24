@@ -346,11 +346,12 @@ Object.assign(UI, {
     return `<div class="hourly-modal__row"><span class="hourly-modal__row-label">${safeLabel}</span><span class="hourly-modal__row-value">${safeValue}</span></div>`;
   },
 
-  // Day blurb: sky + temps + chance. Used on the Now card and the day modal.
+  // Day blurb on the Now card: sky + temps + chance.
+  // Rain, snow, or thunder is named only when that hour's icon is wet.
   _dayStory({ weekday, desc, high, low, pop, rainLabel, kind, when }) {
     const dayName = weekday === 'Today' ? 'Today' : weekday;
     const sky = (desc || 'mixed conditions').toLowerCase();
-    const what = kind === 'snow' || kind === 'thunder' ? kind : 'rain';
+    const what = kind === 'snow' || kind === 'thunder' || kind === 'rain' ? kind : '';
     const whenBit = when ? ` ${when}` : '';
     let open = `${dayName} is ${sky}`;
     if (high !== '—' && low !== '—') open += `, reaching ${high} and falling to ${low}`;
@@ -358,9 +359,10 @@ Object.assign(UI, {
     else if (low !== '—') open += `, falling to ${low}`;
     open += '.';
     const chance = pop >= 100 ? `A ${Math.round(pop)}% chance` : `About a ${Math.round(pop)}% chance`;
-    if (pop > 0 && rainLabel) open += ` ${chance} of ${what}${whenBit}, around ${rainLabel}.`;
-    else if (pop > 0) open += ` ${chance} of ${what}${whenBit}.`;
-    else if (rainLabel) open += ` Around ${rainLabel} of ${what}${whenBit}.`;
+    if (pop > 0 && what && rainLabel) open += ` ${chance} of ${what}${whenBit}, around ${rainLabel}.`;
+    else if (pop > 0 && what) open += ` ${chance} of ${what}${whenBit}.`;
+    else if (pop > 0) open += ` ${chance}${whenBit}.`;
+    else if (rainLabel && what) open += ` Around ${rainLabel} of ${what}${whenBit}.`;
     return open;
   },
 

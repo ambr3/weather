@@ -16,14 +16,14 @@ Object.assign(UI, {
       const outlook = this.dayOutlook(date, daily, hourly, units);
       const pop = outlook && outlook.pop != null ? outlook.pop : 0;
       const iconCode = outlook ? outlook.iconCode : WeatherIcons.dayIcon(date, hourly);
-      const kind = outlook && outlook.kind ? outlook.kind : 'rain';
+      const kind = outlook && outlook.kind ? outlook.kind : '';
       const icon = WeatherIcons.get(iconCode, true);
 
       const d = Utils.parseLocal(date + 'T00:00:00', this._tz);
       const weekday = i === 0 ? 'Today' : d.toLocaleDateString('en-US', { timeZone: this._tz || undefined, weekday: 'short' });
       const dateLabel = d.toLocaleDateString('en-US', { timeZone: this._tz || undefined, month: 'short', day: 'numeric' });
       const label = Utils.getWeatherDescription(iconCode);
-      const chance = pop > 0 ? `<span class="forecast-card__row-chance">${pop}% ${kind}</span>` : '';
+      const chance = pop > 0 ? `<span class="forecast-card__row-chance">${pop}%${kind ? ` ${kind}` : ''}</span>` : '';
 
       return `
         <div class="forecast-card__row${i === 0 ? ' forecast-card__row--today' : ''}" role="listitem" data-i="${i}">
@@ -182,7 +182,7 @@ Object.assign(UI, {
         ? nowVals.cloudCover
         : (hourly.cloud_cover ? hourly.cloud_cover[idx] : null);
       const iconCode = WeatherIcons.hourIcon(rawCode, pop, precipNow, snowNow, cloudNow);
-      const kind = WeatherIcons.precipWord(rawCode);
+      const kind = WeatherIcons._isWet(iconCode) ? WeatherIcons.precipWord(iconCode) : '';
       const icon = WeatherIcons.get(
         iconCode,
         nowVals && nowVals.isDay != null ? nowVals.isDay
@@ -193,7 +193,7 @@ Object.assign(UI, {
       return `
         <div class="hourly-strip__hour${isNow ? ' hourly-strip__hour--now' : ''}"
              role="listitem" data-i="${modalI}" tabindex="0"
-             aria-label="${this._esc(`${timeLabel}, ${temp}${rain ? `, ${rain} ${kind}` : ''}`)}">
+             aria-label="${this._esc(`${timeLabel}, ${temp}${rain ? `, ${rain}${kind ? ` ${kind}` : ''}` : ''}`)}">
           <span class="hourly-strip__time">${this._esc(timeLabel)}</span>
           <span class="hourly-strip__icon">${icon}</span>
           <span class="hourly-strip__temp">${this._esc(temp)}</span>

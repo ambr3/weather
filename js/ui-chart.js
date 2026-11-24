@@ -39,7 +39,7 @@ Object.assign(UI, {
         min: 0, max: 100, suffix: '%',
         values: pops.map((p) => (p == null || !Number.isFinite(Number(p)) ? null : Number(p))),
         color: '#38BDF8', cells: true,
-        legend: [{ label: 'chance of rain', swatch: 'rain' }],
+        legend: [{ label: 'chance of precipitation', swatch: 'rain' }],
       };
     } else if (mode === 'solar') {
       const raw = slice('shortwave_radiation');
@@ -291,12 +291,12 @@ Object.assign(UI, {
 
   _chartModeShort(mode) {
     return mode === 'temp' ? 'Temp'
-      : mode === 'rain' ? 'Rain'
+      : mode === 'rain' ? 'Precip'
       : 'Solar';
   },
 
   _chartModeLabel(mode) {
-    return mode === 'rain' ? 'Chance of rain'
+    return mode === 'rain' ? 'Chance of precipitation'
       : mode === 'solar' ? 'Solar'
       : 'Temperature & dew point';
   },

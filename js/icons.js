@@ -61,34 +61,29 @@ const WeatherIcons = {
     return 'rain';
   },
 
-  // Word for the Now sentence: precip type on the highest-chance wet hour
-  // in the set that set the time phrase. No wet code in that set → rain.
+  // Word for the Now sentence: precip type on the highest-chance hour
+  // whose icon is actually wet. A cloud or sun hour does not become rain.
   kindFromHours(hours) {
     let best = null;
     let bestPop = -1;
     const list = Array.isArray(hours) ? hours : [];
     for (let i = 0; i < list.length; i++) {
       const h = list[i];
-      if (!h || !this._isWet(h.code)) continue;
+      if (!h) continue;
+      const icon = this.hourIcon(h.code, h.pop, h.precip, h.snow, h.cloud);
+      if (!this._isWet(icon)) continue;
       const pop = Number(h.pop);
       if (!Number.isFinite(pop) || pop <= bestPop) continue;
       bestPop = pop;
-      best = this.precipWord(h.code);
+      best = this.precipWord(icon);
     }
-    return best || 'rain';
+    return best || '';
   },
 
   _nowKey(nowMs, tz) {
     if (nowMs == null || !Number.isFinite(Number(nowMs))) return '';
     if (typeof Utils === 'undefined' || !Utils.hourKey) return '';
     return Utils.hourKey(Number(nowMs), tz);
-  },
-
-  _inWindow(stamp, dateStr, nowKey) {
-    if (typeof Utils !== 'undefined' && Utils.hourInWindow) {
-      return Utils.hourInWindow(stamp, dateStr, nowKey);
-    }
-    return String(stamp || '').startsWith(String(dateStr) + 'T');
   },
 
   // Sky to show when a wet code is withheld. Same bands for every card.
@@ -113,78 +108,100 @@ const WeatherIcons = {
     return this.skyFromCover(cloudCover);
   },
 
-  // Day icon: the sky that covers the daylight hours, each hour judged by hourIcon.
-  // One wet hour does not rename the day. Ties lean toward the clearer code.
-  // nowMs (today only) keeps hours still ahead — the same window as the chance.
-  // Daylight hours in that window win when any remain; otherwise the remaining
-  // hours, including night. Omit nowMs for a later day's full daylight.
-  dayIcon(dateStr, hourly, nowMs, tz) {
-    if (!hourly || !hourly.time || !hourly.weather_code || dateStr == null) return 3;
-    const nowKey = this._nowKey(nowMs, tz);
-    const collect = (daylightOnly) => {
-      const codes = [];
-      for (let k = 0; k < hourly.time.length; k++) {
-        if (!this._inWindow(hourly.time[k], dateStr, nowKey)) continue;
-        if (daylightOnly && hourly.is_day && hourly.is_day[k] === 0) continue;
-        const wc = hourly.weather_code[k];
-        if (wc == null) continue;
-        const pop = hourly.precipitation_probability ? hourly.precipitation_probability[k] : null;
-        const precip = hourly.precipitation && hourly.precipitation[k] != null ? hourly.precipitation[k] : 0;
-        const snow = hourly.snowfall && hourly.snowfall[k] != null ? hourly.snowfall[k] : 0;
-        const cloud = hourly.cloud_cover ? hourly.cloud_cover[k] : null;
-        codes.push(this.hourIcon(wc, pop, precip, snow, cloud));
-      }
-      return codes;
-    };
-    let codes = collect(true);
-    if (!codes.length) codes = collect(false);
-    if (!codes.length) return 3;
-    const counts = new Map();
-    codes.forEach((c) => counts.set(c, (counts.get(c) || 0) + 1));
+  // Most common exact code. A tie keeps the lower code.
+  _modeCode(counts) {
     let best = null;
     let n = 0;
     counts.forEach((count, code) => {
-      if (best == null || count > n) {
+      if (best == null || count > n || (count === n && Number(code) < Number(best))) {
         n = count;
         best = code;
-        return;
       }
-      if (count !== n) return;
-      const bestWet = this._isWet(best);
-      const codeWet = this._isWet(code);
-      if (bestWet && !codeWet) best = code;
-      else if (bestWet === codeWet && Number(code) < Number(best)) best = code;
     });
     return best;
   },
 
-  // Most common wet kind in the day's daylight hours, for the chance line.
-  // nowMs limits today to hours still ahead, same window as dayIcon.
-  dayPrecipWord(dateStr, hourly, nowMs, tz) {
-    if (!hourly || !hourly.time || !hourly.weather_code || dateStr == null) return 'rain';
+  // Day icon for every day: the picture that appears on the most hours
+  // of that day, using the same hourIcon as the hourly card. Hours before
+  // sunrise and after sunset count. Codes that share a picture count together,
+  // so several drizzle codes are one icon. A tie keeps the sky, then the
+  // lower code. One hour does not beat a picture that appears more often.
+  // nowMs (today only) keeps hours still ahead. Omit it for a later day.
+  dayIcon(dateStr, hourly, nowMs, tz) {
+    if (!hourly || !hourly.time || !hourly.weather_code || dateStr == null) return 3;
     const nowKey = this._nowKey(nowMs, tz);
-    const counts = {};
-    const add = (daylightOnly) => {
-      for (let k = 0; k < hourly.time.length; k++) {
-        if (!this._inWindow(hourly.time[k], dateStr, nowKey)) continue;
-        if (daylightOnly && hourly.is_day && hourly.is_day[k] === 0) continue;
-        const wc = hourly.weather_code[k];
-        if (!this._isWet(wc)) continue;
-        const word = this.precipWord(wc);
-        counts[word] = (counts[word] || 0) + 1;
+    const groups = new Map();
+    for (let k = 0; k < hourly.time.length; k++) {
+      const onDate = typeof Utils !== 'undefined' && Utils.hourOnDate
+        ? Utils.hourOnDate(hourly.time[k], dateStr, nowKey)
+        : String(hourly.time[k] || '').startsWith(String(dateStr) + 'T');
+      if (!onDate) continue;
+      const wc = hourly.weather_code[k];
+      if (wc == null) continue;
+      const pop = hourly.precipitation_probability ? hourly.precipitation_probability[k] : null;
+      const precip = hourly.precipitation && hourly.precipitation[k] != null ? hourly.precipitation[k] : 0;
+      const snow = hourly.snowfall && hourly.snowfall[k] != null ? hourly.snowfall[k] : 0;
+      const cloud = hourly.cloud_cover ? hourly.cloud_cover[k] : null;
+      const icon = this.hourIcon(wc, pop, precip, snow, cloud);
+      const name = this._group(icon);
+      let g = groups.get(name);
+      if (!g) {
+        g = { count: 0, codes: new Map() };
+        groups.set(name, g);
       }
-    };
-    add(true);
-    if (!Object.keys(counts).length) add(false);
-    let best = 'rain';
-    let n = 0;
-    Object.keys(counts).forEach((word) => {
-      if (counts[word] > n) {
-        n = counts[word];
-        best = word;
+      g.count += 1;
+      g.codes.set(icon, (g.codes.get(icon) || 0) + 1);
+    }
+    let best = null;
+    groups.forEach((g) => {
+      if (!best || g.count > best.count) {
+        best = g;
+        return;
       }
+      if (g.count !== best.count) return;
+      const mode = Number(this._modeCode(g.codes));
+      const bestMode = Number(this._modeCode(best.codes));
+      const wet = this._isWet(mode);
+      const bestWet = this._isWet(bestMode);
+      if (bestWet && !wet) best = g;
+      else if (wet === bestWet && mode < bestMode) best = g;
     });
-    return best;
+    if (!best) return 3;
+    return this._modeCode(best.codes);
+  },
+
+  // Word beside the day chance. It matches the day icon. A sky icon has no
+  // rain/snow/thunder word. Drizzle counts as rain.
+  dayPrecipWord(dateStr, hourly, nowMs, tz) {
+    const icon = this.dayIcon(dateStr, hourly, nowMs, tz);
+    if (!this._isWet(icon)) return '';
+    return this.precipWord(icon);
+  },
+
+  // Amount on the hours whose icon uses the day word. Past hours and sky
+  // hours are not included. precip is millimetres, snow is the snowfall sum.
+  dayShownAmount(dateStr, hourly, nowMs, tz) {
+    const word = this.dayPrecipWord(dateStr, hourly, nowMs, tz);
+    const out = { word, precip: 0, snow: 0 };
+    if (!word || !hourly || !hourly.time || !hourly.weather_code || dateStr == null) return out;
+    const nowKey = this._nowKey(nowMs, tz);
+    for (let k = 0; k < hourly.time.length; k++) {
+      const onDate = typeof Utils !== 'undefined' && Utils.hourOnDate
+        ? Utils.hourOnDate(hourly.time[k], dateStr, nowKey)
+        : String(hourly.time[k] || '').startsWith(String(dateStr) + 'T');
+      if (!onDate) continue;
+      const wc = hourly.weather_code[k];
+      if (wc == null) continue;
+      const pop = hourly.precipitation_probability ? hourly.precipitation_probability[k] : null;
+      const precip = hourly.precipitation && hourly.precipitation[k] != null ? Number(hourly.precipitation[k]) : 0;
+      const snow = hourly.snowfall && hourly.snowfall[k] != null ? Number(hourly.snowfall[k]) : 0;
+      const cloud = hourly.cloud_cover ? hourly.cloud_cover[k] : null;
+      const icon = this.hourIcon(wc, pop, precip, snow, cloud);
+      if (!this._isWet(icon) || this.precipWord(icon) !== word) continue;
+      if (Number.isFinite(precip)) out.precip += precip;
+      if (Number.isFinite(snow)) out.snow += snow;
+    }
+    return out;
   },
 
   _svg(body, viewBox = '0 0 64 64') {

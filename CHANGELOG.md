@@ -4,6 +4,11 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
+## 0.8.4 — 2026-11-24
+
+- The daily icon is whichever icon is on the most hours of that calendar day, including before sunrise. Tomorrow morning stays on tomorrow. The word matches that icon, and a cloud hour is not called rain.
+- The Now sentence, the day chance, and the conditions line only name rain, snow, or thunder for hours that show that icon. A later day with hourly stamps does not fall back to the daily chance maximum. The 24-hour chart says chance of precipitation, not rain.
+
 ## 0.8.3 — 2026-11-19
 
 - Rain, drizzle, snow, and thunder show only when the chance is at least 50% and some precipitation is forecast. Below that the sky stays cloud or sun, and the percentage is still shown. One wet hour no longer renames the day. The Now chance is this hour.

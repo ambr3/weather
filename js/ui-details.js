@@ -12,16 +12,18 @@ Object.assign(UI, {
     const boxes = [];
 
     const precipNow = Utils.formatPrecip(c.precipitation, units) || (units === 'imperial' ? '0 in' : '0 mm');
-    const popToday = (d.time && d.time[0])
-      ? (this.dayOutlook(d.time[0], d, data.hourly, units)?.pop ?? null)
-      : null;
-    const rainToday = d.rain_sum && d.rain_sum[0] != null ? Math.round(d.rain_sum[0] * 10) / 10 : null;
-    const snowToday = d.snowfall_sum && d.snowfall_sum[0] != null ? d.snowfall_sum[0] : null;
+    const outlook = (d.time && d.time[0]) ? this.dayOutlook(d.time[0], d, data.hourly, units) : null;
+    const popToday = outlook ? outlook.pop : null;
     const precipSub = [];
     if (popToday != null) precipSub.push(`${popToday}% chance today`);
-    const snowLabel = Utils.formatSnow(snowToday, units);
-    if (snowLabel) precipSub.push(`${snowLabel} snow`);
-    if (rainToday > 0) precipSub.push(`${Utils.formatPrecip(rainToday, units)} rain`);
+    const shown = outlook && outlook.shown;
+    if (shown && shown.word === 'snow' && shown.snow > 0) {
+      const snowLabel = Utils.formatSnow(shown.snow, units);
+      if (snowLabel) precipSub.push(`${snowLabel} snow`);
+    } else if (shown && (shown.word === 'rain' || shown.word === 'thunder') && shown.precip > 0) {
+      const rainLabel = Utils.formatPrecip(shown.precip, units);
+      if (rainLabel) precipSub.push(`${rainLabel} ${shown.word}`);
+    }
 
     const uv = d.uv_index_max && d.uv_index_max[0] != null ? d.uv_index_max[0] : null;
     const uvClear = d.uv_index_clear_sky_max && d.uv_index_clear_sky_max[0] != null ? d.uv_index_clear_sky_max[0] : null;
@@ -259,19 +261,18 @@ Object.assign(UI, {
     if (windSec) windSec.classList.add('hidden');
   },
 
-  // Highest chance in the window, plus whether any hourly stamps are in it.
-  // Today (fromMs set) runs from the current hour through the end of tonight,
-  // including the next date's 00–05. Omit fromMs for a later day's own hours.
+  // Highest chance on that calendar day, plus whether any hourly stamps are in it.
+  // Today (fromMs set) starts at the current hour. The next morning belongs
+  // to the next day. Omit fromMs for a later day's own hours.
   daytimeMaxPop(dateStr, hourly, fromMs) {
     return Utils.windowMaxPop(dateStr, hourly, fromMs, this._tz);
   },
 
-  // Today's chance is the highest hourly chance from now through tonight,
-  // same window as the strip and the Now sentence. Later days use that day's
-  // own hours. The daily maximum is a fallback only when today's window has
-  // no hourly stamps at all, or when a later day has no hourly chances — not
-  // when today's stamps exist but every probability is null or the remaining
-  // hours are drier than rain that already fell.
+  // Day-row chance is the highest hourly chance on that calendar day,
+  // the same hours as the day icon. Today starts at the current hour.
+  // The daily maximum is a fallback only when today's window has no hourly
+  // stamps at all, or when a later day has no hourly chances — not when
+  // today's stamps exist but every probability is null.
   meaningfulDayPop(dateStr, daily, hourly) {
     const isToday = String(dateStr) === this._todayDateKey();
     const span = this.daytimeMaxPop(dateStr, hourly, isToday ? Date.now() : null);
@@ -298,10 +299,9 @@ Object.assign(UI, {
     return Math.round(prob);
   },
 
-  // Day row and day modal: icon is the daylight sky (same hour rule), not
-  // Open-Meteo's most severe daily code and not a single wet hour.
-  // Today uses hours still ahead so the row matches the Now card.
-  // Later days keep the full day.
+  // Day row and day modal: the icon that appears on the most hours
+  // of that day, same hour icons as the hourly card. Today uses hours
+  // still ahead. Later days use that day's own hours.
   dayOutlook(dateStr, daily, hourly, units) {
     if (!daily || !daily.time || dateStr == null) return null;
     const idx = daily.time.indexOf(String(dateStr));
@@ -312,8 +312,8 @@ Object.assign(UI, {
     const isToday = String(dateStr) === this._todayDateKey();
     const nowMs = isToday ? Date.now() : null;
     const iconCode = WeatherIcons.dayIcon(dateStr, hourly, nowMs, this._tz);
-    const kind = WeatherIcons.dayPrecipWord(dateStr, hourly, nowMs, this._tz);
-    return { idx, pop, rainSum, snowSum, iconCode, kind };
+    const shown = WeatherIcons.dayShownAmount(dateStr, hourly, nowMs, this._tz);
+    return { idx, pop, rainSum, snowSum, iconCode, kind: shown.word, shown };
   },
 
   // Min/max across the 24 hours of a date for a given hourly key (e.g. dew point).

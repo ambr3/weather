@@ -4,10 +4,15 @@ Object.assign(UI, {
     const c = data.current;
     const d = data.daily || {};
     const nowStartIdx = this._hourlyStartIdx(data.hourly);
-    const nowPop = this._meaningfulNowPop(c, data.hourly, nowStartIdx);
+    const nowObs = this._nowFromCurrent(c, data.hourly, units);
+    const nowPop = nowObs ? nowObs.pop : this._meaningfulNowPop(c, data.hourly, nowStartIdx);
     const uvNow = data.hourly && data.hourly.uv_index ? data.hourly.uv_index[nowStartIdx] : null;
     const iconCode = WeatherIcons.hourIcon(
-      c.weather_code, nowPop, c.precipitation ?? 0, c.snowfall ?? 0, c.cloud_cover
+      nowObs ? nowObs.code : c.weather_code,
+      nowPop,
+      nowObs ? nowObs.precip : 0,
+      nowObs ? nowObs.snow : 0,
+      nowObs ? nowObs.cloudCover : c.cloud_cover
     );
     const temp = Utils.formatTemp(c.temperature_2m, units);
     const feels = Utils.formatTemp(c.apparent_temperature, units);
@@ -26,7 +31,12 @@ Object.assign(UI, {
     const dayLow = todayPair.low != null ? Utils.formatTemp(todayPair.low, units) : null;
     const todayKey = (d.time && d.time[0]) ? d.time[0] : this._todayDateKey();
     const outlook = this.dayOutlook(todayKey, d, data.hourly, units);
-    const rain = Utils.rainTiming(todayKey, data.hourly, Date.now(), this._tz);
+    const rain = Utils.rainTiming(todayKey, data.hourly, Date.now(), this._tz, nowObs ? {
+      code: nowObs.code,
+      precip: nowObs.precip,
+      snow: nowObs.snow,
+      cloud: nowObs ? nowObs.cloudCover : c.cloud_cover,
+    } : null);
     const outlookText = outlook ? this._dayStory({
       weekday: 'Today',
       desc: Utils.getWeatherDescription(outlook.iconCode),
