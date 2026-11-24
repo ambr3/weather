@@ -6,7 +6,6 @@ Object.assign(UI, {
     const nowStartIdx = this._hourlyStartIdx(data.hourly);
     const nowObs = this._nowFromCurrent(c, data.hourly, units);
     const nowPop = nowObs ? nowObs.pop : this._meaningfulNowPop(c, data.hourly, nowStartIdx);
-    const uvNow = data.hourly && data.hourly.uv_index ? data.hourly.uv_index[nowStartIdx] : null;
     const iconCode = WeatherIcons.hourIcon(
       nowObs ? nowObs.code : c.weather_code,
       nowPop,
@@ -48,7 +47,6 @@ Object.assign(UI, {
       when: rain.when,
     }) : '';
 
-    const windUnit = Utils.getWindUnit(UI.windUnit);
     const SUN_R = 42;
     const MOON_R = 36;
     const sunOrb = this._orbitFor(d.sunrise && d.sunrise[0], d.sunset && d.sunset[0], this._tz, SUN_R);
@@ -93,20 +91,14 @@ Object.assign(UI, {
       </div>
       <div class="current-weather__temp-row">
         <div class="current-weather__temp">${this._esc(temp)}</div>
+        ${(dayHigh || dayLow) ? `<div class="current-weather__range" aria-label="Today's high and low">
+          ${dayHigh ? `<span class="current-weather__high">${this._esc(dayHigh)}</span>` : ''}
+          ${dayLow ? `<span class="current-weather__low">${this._esc(dayLow)}</span>` : ''}
+        </div>` : ''}
       </div>
       ${outlookText ? `<p class="current-weather__outlook">${this._esc(outlookText)}</p>` : ''}
       <div class="current-weather__meta">
         <div class="current-weather__feels">Feels like ${this._esc(feels)}</div>
-      </div>
-      <div class="current-weather__extra">
-        ${c.relative_humidity_2m != null ? `<span class="current-weather__extra-item"><span class="current-weather__extra-label">Humidity</span><span class="current-weather__extra-value">${Math.round(c.relative_humidity_2m)}%</span></span>` : ''}
-        ${c.wind_speed_10m != null ? `<span class="current-weather__extra-item"><span class="current-weather__extra-label">Wind</span><span class="current-weather__extra-value">${Math.round(c.wind_speed_10m)} ${this._esc(windUnit)}${c.wind_direction_10m != null ? ` ${this._esc(Utils.getWindDirection(c.wind_direction_10m))}` : ''}</span></span>` : ''}
-        ${c.wind_gusts_10m != null ? `<span class="current-weather__extra-item"><span class="current-weather__extra-label">Gusts</span><span class="current-weather__extra-value">${Math.round(c.wind_gusts_10m)} ${this._esc(windUnit)}</span></span>` : ''}
-        ${c.visibility != null ? `<span class="current-weather__extra-item"><span class="current-weather__extra-label">Visibility</span><span class="current-weather__extra-value">${this._esc(Utils.formatVisibility(c.visibility, UI.visUnit))}</span></span>` : ''}
-        ${c.pressure_msl != null ? `<span class="current-weather__extra-item"><span class="current-weather__extra-label">Pressure</span><span class="current-weather__extra-value">${this._esc(Utils.formatPressure(c.pressure_msl, UI.pressUnit))}</span></span>` : ''}
-        ${c.dew_point_2m != null ? `<span class="current-weather__extra-item"><span class="current-weather__extra-label">Dew point</span><span class="current-weather__extra-value">${this._esc(Utils.formatTemp(c.dew_point_2m, units))}</span></span>` : ''}
-        ${uvNow != null ? `<span class="current-weather__extra-item"><span class="current-weather__extra-label">UV</span><span class="current-weather__extra-value">${Math.round(uvNow)}</span></span>` : ''}
-        ${c.cloud_cover != null ? `<span class="current-weather__extra-item"><span class="current-weather__extra-label">Cloud</span><span class="current-weather__extra-value">${Math.round(c.cloud_cover)}%</span></span>` : ''}
       </div>
     `;
 

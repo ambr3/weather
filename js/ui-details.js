@@ -189,7 +189,7 @@ Object.assign(UI, {
       ticks.push(
         `<line x1="${(50 + Math.sin(r) * 42).toFixed(2)}" y1="${(50 - Math.cos(r) * 42).toFixed(2)}"` +
         ` x2="${(50 + Math.sin(r) * (42 - len)).toFixed(2)}" y2="${(50 - Math.cos(r) * (42 - len)).toFixed(2)}"` +
-        ` stroke="currentColor" stroke-opacity="${major ? 0.55 : 0.28}" stroke-width="${major ? 2.4 : 1.2}"/>`
+        ` stroke="currentColor" stroke-opacity="${major ? 0.85 : 0.45}" stroke-width="${major ? 2.2 : 1.1}"/>`
       );
     }
 
@@ -199,15 +199,17 @@ Object.assign(UI, {
       const label = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][d / 45];
       const x = 50 + Math.sin(r) * 29;
       const y = 50 - Math.cos(r) * 29;
+      const north = label === 'N';
       return `<text x="${x.toFixed(2)}" y="${(y + 3.4).toFixed(2)}" text-anchor="middle"` +
-        ` font-size="${major ? 10 : 7}" font-weight="${major ? 800 : 600}" fill="currentColor" opacity="${major ? 0.95 : 0.6}">${label}</text>`;
+        ` font-size="${major ? 10 : 6.5}" font-weight="${major ? 800 : 600}"` +
+        ` fill="${north ? 'var(--color-accent)' : 'currentColor'}" opacity="${north ? 1 : (major ? 1 : 0.72)}">${label}</text>`;
     }).join('');
 
     const arrow = dirDeg != null
-      ? `<g transform="rotate(${toDeg} 50 50)">
-           <line x1="50" y1="52" x2="50" y2="18" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/>
-           <polygon points="50,7 58,25 42,25" fill="currentColor"/>
-           <polygon points="50,52 57,45 43,45" fill="currentColor" opacity="0.35"/>
+      ? `<g class="weather-compass__needle" transform="rotate(${toDeg} 50 50)">
+           <line x1="50" y1="50" x2="50" y2="68" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.35"/>
+           <line x1="50" y1="50" x2="50" y2="20" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/>
+           <polygon points="50,6 56,20 44,20" fill="currentColor"/>
         </g>`
       : '';
 
@@ -224,27 +226,29 @@ Object.assign(UI, {
       <div class="weather-compass">
         <div class="weather-compass__wind">
           <span class="weather-compass__now-label">Wind now</span>
-          <span class="weather-compass__wind-speed">${safeWind}${safeGust ? `<span class="weather-compass__gust"> &middot; gusts ${safeGust}</span>` : ''}</span>
-          ${dirDeg != null ? `<span class="weather-compass__wind-dir">blowing ${this._esc(toDir)} &middot; from ${this._esc(fromDir)}</span>` : ''}
+          <span class="weather-compass__wind-speed">${safeWind}</span>
+          ${safeGust ? `<span class="weather-compass__gust">Gusts ${safeGust}</span>` : ''}
+          ${dirDeg != null ? `<span class="weather-compass__wind-dir">From ${this._esc(fromDir)}</span>` : ''}
         </div>
         <div class="weather-compass__rose">
           <svg viewBox="0 0 100 100" class="weather-compass__svg" role="img"
                aria-label="${dirDeg != null ? this._esc(`Wind from ${fromDir}, blowing toward ${toDir}`) : 'Wind direction not available'}">
-            <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-opacity="0.18" stroke-width="1.5"/>
-            <circle cx="50" cy="50" r="37" fill="none" stroke="currentColor" stroke-opacity="0.1" stroke-width="1" stroke-dasharray="2 3"/>
+            <circle cx="50" cy="50" r="47" fill="none" stroke="currentColor" stroke-opacity="0.22" stroke-width="1.6"/>
+            <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" stroke-opacity="0.12" stroke-width="1"/>
             ${ticks}
             ${cardinals}
             ${arrow}
-            <circle cx="50" cy="50" r="3.4" fill="currentColor" opacity="0.6"/>
+            <circle cx="50" cy="50" r="4.6" fill="var(--color-card, currentColor)" stroke="var(--color-accent)" stroke-width="1.6"/>
+            <circle cx="50" cy="50" r="1.6" fill="var(--color-accent)"/>
           </svg>
         </div>
         ${safeToday ? `
         <div class="weather-compass__today" aria-label="Today's wind detail">
           <span class="weather-compass__today-title">Today's wind</span>
-          ${safeToday.maxGust ? `<span class="weather-compass__today-row"><b>Gustiest</b> ${safeToday.maxGust}</span>` : ''}
-          ${safeToday.maxWind ? `<span class="weather-compass__today-row"><b>Strongest</b> ${safeToday.maxWind}</span>` : ''}
-          ${safeToday.minWind ? `<span class="weather-compass__today-row"><b>Calmest</b> ${safeToday.minWind}</span>` : ''}
-          ${safeToday.prevailing ? `<span class="weather-compass__today-row"><b>Prevailing</b> from ${safeToday.prevailing}</span>` : ''}
+          ${safeToday.maxGust ? `<span class="weather-compass__stat"><span class="weather-compass__stat-label">Gustiest</span><span class="weather-compass__stat-value">${safeToday.maxGust}</span></span>` : ''}
+          ${safeToday.maxWind ? `<span class="weather-compass__stat"><span class="weather-compass__stat-label">Strongest</span><span class="weather-compass__stat-value">${safeToday.maxWind}</span></span>` : ''}
+          ${safeToday.minWind ? `<span class="weather-compass__stat"><span class="weather-compass__stat-label">Calmest</span><span class="weather-compass__stat-value">${safeToday.minWind}</span></span>` : ''}
+          ${safeToday.prevailing ? `<span class="weather-compass__stat"><span class="weather-compass__stat-label">Prevailing</span><span class="weather-compass__stat-value">From ${safeToday.prevailing}</span></span>` : ''}
         </div>` : ''}
         <div class="weather-compass__location">
           <div class="weather-compass__city">${cityName}${country ? `<span class="weather-compass__country">${country}</span>` : ''}</div>

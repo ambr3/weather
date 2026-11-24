@@ -304,6 +304,12 @@ body {
   text-decoration: underline;
 }
 
+/* Once a place is on screen, the motto stays in the footer.
+   The Open-Meteo credit stays here: their licence wants it next to the data. */
+body:has(#weatherContent.weather-content--visible:not(.hidden)) .header__motto {
+  display: none;
+}
+
 .header__logo img {
   flex-shrink: 0;
   width: 36px;
@@ -1245,7 +1251,7 @@ html[data-theme="dark"] body::after {
 
 .current-weather__temp-row {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 0.85rem;
   margin-bottom: 0.15rem;
   flex-wrap: wrap;
@@ -1258,6 +1264,32 @@ html[data-theme="dark"] body::after {
   line-height: 1;
   color: var(--color-text);
   letter-spacing: -0.03em;
+}
+
+.current-weather__range {
+  display: flex;
+  flex-direction: column;
+  gap: 0.16rem;
+  padding-bottom: 0.42rem;
+}
+
+.current-weather__high,
+.current-weather__low {
+  font-family: var(--font-heading);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.current-weather__high {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.current-weather__low {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
 }
 
 .current-weather__meta {
@@ -1770,14 +1802,14 @@ html[data-theme="dark"] body::after {
   }
 
   .forecast-card__row--today:hover {
-    background: var(--color-card-hover);
+    background: var(--warm-tint);
     box-shadow:
-      inset 4px 0 0 var(--color-accent),
+      inset 4px 0 0 var(--warm),
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
 
   .hourly-strip__hour--now:hover {
-    background: var(--color-card-hover);
+    background: var(--warm-tint);
     box-shadow: none;
   }
 
@@ -1788,6 +1820,11 @@ html[data-theme="dark"] body::after {
   .hourly-chart__mode:hover {
     color: var(--color-text);
     background: var(--color-card-hover);
+  }
+
+  .hourly-chart__mode.is-active:hover {
+    color: #1a1208;
+    background: var(--warm);
   }
 }
 
@@ -1940,47 +1977,61 @@ html[data-theme="dark"] body::after {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
-  padding: 0.25rem 0 0.5rem;
+  gap: 0.85rem;
+  padding: 0.35rem 0 0.35rem;
 }
 
 .weather-compass__rose {
   position: relative;
-  width: min(230px, 78vw);
-  max-width: 260px;
+  width: min(248px, 70vw);
+  max-width: 268px;
+  padding: 0.35rem;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 42%, var(--color-card-hover), transparent 68%);
 }
 
 .weather-compass__svg {
   display: block;
   width: 100%;
   height: auto;
-  color: var(--color-text);
+  color: var(--color-text-muted);
+}
+
+.weather-compass__needle {
+  color: var(--color-accent);
 }
 
 .weather-compass__location {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.2rem;
+  width: min(440px, 100%);
+  margin-top: 0.15rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-card-border);
   text-align: center;
 }
 
 .weather-compass__city {
   font-family: var(--font-heading);
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 600;
+  letter-spacing: 0.01em;
   line-height: 1.2;
 }
 
 .weather-compass__country {
-  margin-left: 0.4rem;
+  margin-left: 0.35rem;
   color: var(--color-text-muted);
-  font-size: 0.9em;
+  font-size: 0.82em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
 }
 
 .weather-compass__coords {
-  font-size: 0.8rem;
-  letter-spacing: 0.04em;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -1989,67 +2040,85 @@ html[data-theme="dark"] body::after {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.2rem;
-  margin-top: 0.15rem;
+  gap: 0.15rem;
+  margin-top: 0.1rem;
 }
 
 .weather-compass__wind-speed {
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-
-.weather-compass__gust {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-}
-
-.weather-compass__now-label {
-  font-size: 0.7rem;
+  font-family: var(--font-heading);
+  font-size: 2rem;
   font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-text-muted);
-  margin-top: 0.3rem;
-}
-
-.weather-compass__wind-dir {
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-}
-
-.weather-compass__today {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.18rem;
-  width: 100%;
-  max-width: 340px;
-  margin-top: 0.55rem;
-  padding: 0.6rem 0.8rem;
-  border: 1px solid var(--color-card-border);
-  border-radius: var(--radius);
-  background: var(--color-card-hover);
-}
-
-.weather-compass__today-title {
-  font-size: 0.7rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-text-muted);
-  margin-bottom: 0.1rem;
-}
-
-.weather-compass__today-row {
-  font-size: 0.85rem;
-  color: var(--color-text);
+  letter-spacing: -0.03em;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
-.weather-compass__today-row b {
-  color: var(--color-text);
+.weather-compass__gust {
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.weather-compass__now-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--color-text-muted);
+}
+
+.weather-compass__wind-dir {
+  margin-top: 0.15rem;
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
   font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text);
+}
+
+.weather-compass__today {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1.25rem;
+  width: min(440px, 100%);
+  margin-top: 0.2rem;
+  padding: 0.85rem 1rem 0.95rem;
+  border: 1px solid var(--color-card-border);
+  border-radius: calc(var(--radius) + 2px);
+  background: var(--color-card-hover);
+  text-align: left;
+}
+
+.weather-compass__today-title {
+  grid-column: 1 / -1;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.weather-compass__stat-label {
+  display: block;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.weather-compass__stat-value {
+  display: block;
+  margin-top: 0.18rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Hourly Chart */
@@ -2124,34 +2193,14 @@ html[data-theme="dark"] body::after {
   transform: scale(0.98);
 }
 
-.hourly-chart__mode.is-active {
-  color: #fff;
-  border-color: transparent;
-  box-shadow:
-    0 4px 14px -4px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28);
-}
-
-.hourly-chart__mode--temp.is-active {
-  background: linear-gradient(135deg, #ff8a65, #ff7043 55%, #f4511e);
-  box-shadow:
-    0 6px 18px -6px rgba(255, 112, 67, 0.7),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-}
-
-.hourly-chart__mode--rain.is-active {
-  background: linear-gradient(135deg, #67e8f9, #38bdf8 55%, #0ea5e9);
-  box-shadow:
-    0 6px 18px -6px rgba(56, 189, 248, 0.7),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-}
-
+.hourly-chart__mode.is-active,
+.hourly-chart__mode--temp.is-active,
+.hourly-chart__mode--rain.is-active,
 .hourly-chart__mode--solar.is-active {
-  color: #1a1408;
-  background: linear-gradient(135deg, #fde68a, #facc15 55%, #eab308);
-  box-shadow:
-    0 6px 18px -6px rgba(250, 204, 21, 0.65),
-    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  color: #1a1208;
+  background: var(--warm);
+  border-color: transparent;
+  box-shadow: 0 6px 16px -8px var(--warm-glow);
 }
 
 .hourly-chart__hint {
@@ -2324,13 +2373,12 @@ html[data-theme="dark"] body::after {
 }
 
 .hourly-strip__hour--now {
-  background: var(--color-chip-bg);
-  /* No bottom accent: inset box-shadow + radius read as a smiley. */
+  background: var(--warm-tint);
   box-shadow: none;
 }
 
 .hourly-strip__hour--now .hourly-strip__time {
-  color: var(--color-accent);
+  color: var(--warm-strong);
   font-weight: 800;
 }
 
@@ -2640,14 +2688,14 @@ html[data-theme="dark"] body::after {
 }
 
 .forecast-card__row--today {
-  background: var(--color-chip-bg);
-  box-shadow: inset 4px 0 0 var(--color-accent);
+  background: var(--warm-tint);
+  box-shadow: inset 4px 0 0 var(--warm);
 }
 
 .forecast-card__row--today .forecast-card__weekday {
   font-family: var(--font-heading);
   font-weight: 800;
-  color: var(--color-accent);
+  color: var(--warm-strong);
   letter-spacing: -0.01em;
 }
 
@@ -2702,31 +2750,61 @@ html[data-theme="dark"] body::after {
   text-overflow: ellipsis;
 }
 
-.forecast-card__row-chance {
-  font-size: 0.78rem;
+.forecast-card__row-chance,
+.forecast-card__chance {
+  margin-left: auto;
+  flex: 0 0 auto;
+  min-width: 2.6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.08rem;
+  line-height: 1.15;
+}
+
+.forecast-card__chance-num {
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.forecast-card__chance-kind {
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   color: var(--color-text-muted);
 }
 
 .forecast-card__row-temps {
   display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  margin-left: auto;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 0.55rem;
   flex-shrink: 0;
+  min-width: 4.6rem;
 }
 
 .forecast-card__high {
+  min-width: 1.9rem;
   font-size: 1.25rem;
   font-weight: 700;
   line-height: 1;
+  text-align: right;
   color: var(--color-text);
+  font-variant-numeric: tabular-nums;
 }
 
 .forecast-card__low {
-  font-size: 1.05rem;
+  min-width: 1.9rem;
+  font-size: 0.95rem;
   font-weight: 600;
   line-height: 1;
+  text-align: right;
   color: var(--color-text-muted);
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Footer */

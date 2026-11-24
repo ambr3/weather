@@ -293,9 +293,11 @@ Object.assign(UI, {
     if (this._modalMode === 'forecast') {
       const n = (this._modalIndex ?? 0) + 1;
       const total = this._modalCount || 0;
-      hint.textContent = `Day ${n} of ${total} · swipe for more days`;
+      hint.hidden = false;
+      hint.textContent = `Day ${n} of ${total}`;
     } else {
-      hint.textContent = 'Swipe for more hours';
+      hint.hidden = true;
+      hint.textContent = '';
     }
   },
 

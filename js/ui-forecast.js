@@ -23,7 +23,9 @@ Object.assign(UI, {
       const weekday = i === 0 ? 'Today' : d.toLocaleDateString('en-US', { timeZone: this._tz || undefined, weekday: 'short' });
       const dateLabel = d.toLocaleDateString('en-US', { timeZone: this._tz || undefined, month: 'short', day: 'numeric' });
       const label = Utils.getWeatherDescription(iconCode);
-      const chance = pop > 0 ? `<span class="forecast-card__row-chance">${pop}%${kind ? ` ${kind}` : ''}</span>` : '';
+      const chance = pop > 0
+        ? `<span class="forecast-card__chance-num">${pop}%</span>${kind ? `<span class="forecast-card__chance-kind">${this._esc(kind)}</span>` : ''}`
+        : '';
 
       return `
         <div class="forecast-card__row${i === 0 ? ' forecast-card__row--today' : ''}" role="listitem" data-i="${i}">
@@ -34,8 +36,8 @@ Object.assign(UI, {
           <div class="forecast-card__row-icon">${icon}</div>
           <div class="forecast-card__row-info">
             <span class="forecast-card__row-label">${this._esc(label)}</span>
-            ${chance}
           </div>
+          <div class="forecast-card__chance">${chance}</div>
           <div class="forecast-card__row-temps">
             <span class="forecast-card__high">${max === '—' ? '' : max}${max === '—' ? '' : '°'}</span>
             <span class="forecast-card__low">${min === '—' ? '' : min}${min === '—' ? '' : '°'}</span>
@@ -64,7 +66,6 @@ Object.assign(UI, {
             <span class="forecast-card__pagerlead">Swipe</span>
             <span class="forecast-card__pagerrange">days 1–7</span>
           </span>
-          <span class="forecast-card__pagertap">Tap any day for more info</span>
         </div>
       </div>
     `;
@@ -250,7 +251,6 @@ Object.assign(UI, {
             <span class="forecast-card__pagerlead">Swipe</span>
             <span class="forecast-card__pagerrange">days</span>
           </span>
-          <span class="forecast-card__pagertap">Tap any hour for more info</span>
         </div>` : ''}
       </div>
     `;

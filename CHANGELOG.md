@@ -4,6 +4,13 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
+## 0.9.0 — 2026-11-24
+
+- The wind compass leads with the speed and where the wind is from. Today's wind is a short grid.
+- The Now card shows the high and low beside the temperature. Humidity, wind, pressure and the rest stay on Details.
+- Forecast highs read brighter than lows, and the chance sits in its own column. Today, the current hour, and the selected chart use the same orange.
+- The Open-Meteo credit stays in the header next to the forecast. The licence link is the real licence page. Swipe marks stay on the forecast, hourly strip, and chart.
+
 ## 0.8.4 — 2026-11-24
 
 - The daily icon is whichever icon is on the most hours of that calendar day, including before sunrise. Tomorrow morning stays on tomorrow. The word matches that icon, and a cloud hour is not called rain.
