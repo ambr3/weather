@@ -628,6 +628,8 @@ grep -q 'Now → forward only' js/ui.js js/ui-*.js || bad "hourly Now-start comm
 grep -q 'forecast-card__pagerlead' js/ui-forecast.js || bad "forecast swipe mark missing"
 grep -q 'hourly-strip__hint-hours' js/ui-forecast.js || bad "hourly swipe mark missing"
 grep -q 'Swipe to change chart' js/ui-chart.js || bad "chart swipe mark missing"
+grep -A2 'No data available for this chart' js/ui-chart.js | grep -q 'Swipe to change chart' || bad "empty chart swipe mark missing"
+! grep -q 'current-weather__extra' css/style.css css/responsive.css js/ui.js js/ui-*.js || bad "removed Now extra row is back"
 ! grep -q 'open-meteo.com/license"' index.html || bad "Open-Meteo licence link 404s; use /en/licence"
 grep -q 'open-meteo.com/en/licence' index.html || bad "Open-Meteo licence link missing"
 grep -q 'forecast-card__pager--stack' js/ui.js js/ui-*.js css/style.css || bad "stacked pager missing"

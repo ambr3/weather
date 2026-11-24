@@ -1306,28 +1306,6 @@ html[data-theme="dark"] body::after {
   margin-bottom: 0;
 }
 
-.current-weather__extra {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1rem;
-  margin-top: 0.6rem;
-}
-
-.current-weather__extra-item {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.35rem;
-  font-size: 0.85rem;
-}
-
-.current-weather__extra-label {
-  color: var(--color-text-muted);
-}
-
-.current-weather__extra-value {
-  font-weight: 600;
-}
-
 .current-weather__outlook {
   margin: 0.2rem 0 0.55rem;
   max-width: 36rem;

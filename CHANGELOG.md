@@ -4,6 +4,11 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
+## 0.9.1 — 2026-11-24
+
+- Empty chart views keep the "Swipe to change chart" mark, matching charts with data.
+- Removed unused CSS left over from the old Now-card extra row.
+
 ## 0.9.0 — 2026-11-24
 
 - The wind compass leads with the speed and where the wind is from. Today's wind is a short grid.

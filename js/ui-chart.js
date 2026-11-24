@@ -25,7 +25,8 @@ Object.assign(UI, {
     const empty = () => {
       container.innerHTML = `
         <div class="hourly-chart__modes" role="tablist" aria-label="Chart type">${modePillsMarkup}</div>
-        <div class="hourly-chart__empty">No data available for this chart.</div>`;
+        <div class="hourly-chart__empty">No data available for this chart.</div>
+        <div class="hourly-chart__hint"><svg class="hourly-card__hinticon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/><path d="M15 6l6 6-6 6"/></svg><span>Swipe to change chart</span></div>`;
     };
     if (!times.length) { empty(); return; }
     const slice = (key) => hourly[key] ? hourly[key].slice(startIdx, startIdx + count) : null;
