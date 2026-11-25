@@ -244,6 +244,7 @@ const Utils = {
     if (!dateStr || !hourly || !hourly.time || !hourly.precipitation_probability) return empty;
     if (typeof WeatherIcons === 'undefined' || !WeatherIcons.hourIcon) return empty;
     const nowKey = nowMs != null && Number.isFinite(Number(nowMs)) ? this.hourKey(Number(nowMs), tz) : '';
+    const nextKey = nowKey ? this.nextDateKey(dateStr) : '';
     const slots = [];
     for (let k = 0; k < hourly.time.length; k++) {
       const t = String(hourly.time[k] || '');
@@ -266,6 +267,7 @@ const Utils = {
       if (!Number.isFinite(snow)) snow = 0;
       const icon = WeatherIcons.hourIcon(code, pop, precip, snow, cloud);
       if (!WeatherIcons._isWet(icon)) continue;
+      const onNextNight = nextKey && t.startsWith(nextKey + 'T');
       slots.push({
         hour,
         pop: Number(pop),
@@ -273,23 +275,14 @@ const Utils = {
         snow,
         code: icon,
         cloud,
+        part: onNextNight ? 'tonight' : this._clockPart(hour),
       });
     }
     if (!slots.length) return empty;
     const max = Math.max(...slots.map((s) => s.pop));
     const cut = max >= 50 ? 50 : Math.max(1, max - 15);
     const picked = slots.filter((s) => s.pop >= cut);
-    const morning = picked.some((s) => s.hour >= 6 && s.hour < 12);
-    const afternoon = picked.some((s) => s.hour >= 12 && s.hour < 18);
-    const night = picked.some((s) => s.hour >= 18 || s.hour < 6);
-    let when = '';
-    if (morning && afternoon && night) when = 'through the day and tonight';
-    else if (morning && afternoon) when = 'all day';
-    else if (afternoon && night) when = 'this afternoon and tonight';
-    else if (morning && night) when = 'this morning and tonight';
-    else if (morning) when = 'this morning';
-    else if (afternoon) when = 'this afternoon';
-    else if (night) when = 'tonight';
+    const when = this.partPhrase(this._partFlags(picked), true).when;
     const pop = Math.round(Math.max(...picked.map((s) => s.pop)));
     const precip = picked.reduce((sum, s) => sum + s.precip, 0);
     const hours = picked.map((s) => ({
@@ -298,12 +291,69 @@ const Utils = {
     return { when, pop, precip, hours };
   },
 
+  // Clock order is early morning, morning, midday, afternoon, evening.
+  // "Tonight" is only the next date's 00:00–05:59, which comes after this evening.
+  // The early hours of a day are not tonight, and a phrase never walks backwards.
+  _clockPart(hour) {
+    if (hour < 6) return 'early';
+    if (hour < 12) return 'morning';
+    if (hour < 15) return 'midday';
+    if (hour < 18) return 'afternoon';
+    return 'evening';
+  },
+
+  _partFlags(slots) {
+    const flags = {
+      early: false, morning: false, midday: false, afternoon: false, evening: false, tonight: false,
+    };
+    (slots || []).forEach((s) => {
+      const part = s && s.part ? s.part : this._clockPart(s.hour);
+      if (flags[part] != null) flags[part] = true;
+    });
+    return flags;
+  },
+
+  partPhrase(flags, today) {
+    const order = ['early', 'morning', 'midday', 'afternoon', 'evening', 'tonight'];
+    const on = order.filter((k) => flags && flags[k]);
+    const point = {
+      early: 'in the early morning',
+      morning: today ? 'this morning' : 'in the morning',
+      midday: 'around midday',
+      afternoon: today ? 'this afternoon' : 'in the afternoon',
+      evening: today ? 'this evening' : 'in the evening',
+      tonight: 'tonight',
+    };
+    const fromWord = {
+      early: 'the early morning',
+      morning: 'the morning',
+      midday: 'midday',
+      afternoon: 'the afternoon',
+      evening: 'the evening',
+      tonight: 'tonight',
+    };
+    if (!on.length) return { when: '', span: false };
+    if (on.length === 1) return { when: point[on[0]], span: false };
+    const has = (k) => on.indexOf(k) !== -1;
+    if (has('morning') && has('evening')) {
+      let when = 'through the day';
+      if (has('early')) when = 'from the early morning through the evening';
+      if (has('tonight')) when = has('early') ? 'from the early morning through tonight' : 'through the day and tonight';
+      return { when, span: true };
+    }
+    const a = on[0];
+    const b = on[on.length - 1];
+    if (a === 'early' && b === 'midday') return { when: 'from the early morning until midday', span: true };
+    if (a === 'early' && b === 'morning') return { when: 'through the early morning', span: true };
+    return { when: `from ${fromWord[a]} through ${fromWord[b]}`, span: true };
+  },
+
   // When the day's shown chance falls. Same hours as the day row: that
   // calendar day, and today only from the current hour forward. The peak
   // band matches rainTiming so a small chance does not stretch the phrase.
   // A dry hour still counts — the percentage is shown even when the icon stays sky.
   chanceWhen(dateStr, hourly, nowMs, tz) {
-    const empty = { when: '' };
+    const empty = { when: '', span: false };
     if (!dateStr || !hourly || !Array.isArray(hourly.time) || !hourly.precipitation_probability) return empty;
     const nowKey = nowMs != null && Number.isFinite(Number(nowMs)) ? this.hourKey(Number(nowMs), tz) : '';
     const slots = [];
@@ -314,31 +364,17 @@ const Utils = {
       if (pop == null || !(Number(pop) > 0)) continue;
       const hour = Number(t.slice(11, 13));
       if (!Number.isFinite(hour)) continue;
-      slots.push({ hour, pop: Number(pop) });
+      slots.push({ hour, pop: Number(pop), part: this._clockPart(hour) });
     }
     if (!slots.length) return empty;
     const max = Math.max(...slots.map((s) => s.pop));
     const cut = max >= 50 ? 50 : Math.max(1, max - 15);
     const picked = slots.filter((s) => s.pop >= cut);
-    const morning = picked.some((s) => s.hour >= 6 && s.hour < 12);
-    const afternoon = picked.some((s) => s.hour >= 12 && s.hour < 18);
-    const evening = picked.some((s) => s.hour >= 18);
-    const early = picked.some((s) => s.hour < 6);
-    const today = !!nowKey;
-    let when = '';
-    if (morning && afternoon && evening) when = early ? 'through the day and overnight' : 'through the day';
-    else if (early && morning && afternoon) when = today ? 'overnight through this afternoon' : 'overnight through the afternoon';
-    else if (afternoon && evening) when = today ? 'this afternoon and evening' : 'in the afternoon and evening';
-    else if (morning && afternoon) when = today ? 'this morning and afternoon' : 'in the morning and afternoon';
-    else if (morning && evening) when = today ? 'this morning and evening' : 'in the morning and evening';
-    else if (evening && early) when = today ? 'this evening and overnight' : 'in the evening and overnight';
-    else if (morning && early) when = today ? 'overnight and this morning' : 'overnight and in the morning';
-    else if (afternoon && early) when = today ? 'overnight and this afternoon' : 'overnight and in the afternoon';
-    else if (morning) when = today ? 'this morning' : 'in the morning';
-    else if (afternoon) when = today ? 'this afternoon' : 'in the afternoon';
-    else if (evening) when = today ? 'this evening' : 'in the evening';
-    else if (early) when = 'overnight';
-    return { when };
+    const hours = picked.map((s) => s.hour);
+    const spanHours = Math.max(...hours) - Math.min(...hours);
+    const peak = picked.reduce((best, s) => (s.pop > best.pop ? s : best), picked[0]);
+    if (spanHours <= 4) return this.partPhrase({ [peak.part]: true }, !!nowKey);
+    return this.partPhrase(this._partFlags(picked), !!nowKey);
   },
 
   formatTime(isoString, tz) {

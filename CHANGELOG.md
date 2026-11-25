@@ -4,6 +4,10 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
+## 0.9.4 — 2026-11-25
+
+- Chance timing on the Now card and the day card runs in clock order: early morning, morning, midday, afternoon, evening. Tonight is only the hours after midnight still ahead.
+
 ## 0.9.3 — 2026-11-25
 
 - A day card opens with a short summary: the day's sky, the same chance as the row, and when that chance falls.

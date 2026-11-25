@@ -279,8 +279,8 @@ const overnightPeak = Utils.chanceWhen('2026-11-27', {
   time: ['2026-11-27T04:00', '2026-11-27T09:00', '2026-11-27T12:00', '2026-11-27T18:00'],
   precipitation_probability: [91, 70, 51, 20],
 }, null, 'UTC');
-if (overnightPeak.when !== 'overnight through the afternoon') {
-  console.error('overnight peak must stay in the phrase', overnightPeak); process.exit(1);
+if (overnightPeak.when !== 'from the early morning until midday') {
+  console.error('early-morning peak must stay in clock order', overnightPeak); process.exit(1);
 }
 const allDayHours = {
   time: ['2026-11-19T08:00', '2026-11-19T14:00', '2026-11-19T20:00'],
@@ -290,7 +290,7 @@ const allDayHours = {
   cloud_cover: [90, 90, 90],
 };
 const allDay = Utils.rainTiming('2026-11-19', allDayHours, null, 'UTC');
-if (allDay.when !== 'through the day and tonight' || allDay.pop !== 90) {
+if (allDay.when !== 'through the day' || allDay.pop !== 90) {
   console.error('rain timing all day', allDay); process.exit(1);
 }
 const tonight = Utils.rainTiming('2026-11-19', {
@@ -318,7 +318,7 @@ const pastHundred = Utils.rainTiming('2026-11-19', {
   precipitation: [5.7, 0, 1.1, 1.3],
   cloud_cover: [90, 100, 90, 80],
 }, pastNow, 'UTC');
-if (pastHundred.pop === 100 || pastHundred.when !== 'tonight' || pastHundred.pop !== 60) {
+if (pastHundred.pop === 100 || pastHundred.when !== 'this evening' || pastHundred.pop !== 60) {
   console.error('past 100% and a cloudy 80% must not set the rain sentence', pastHundred); process.exit(1);
 }
 if (Math.round(pastHundred.precip * 10) / 10 !== 1.1) {

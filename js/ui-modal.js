@@ -374,17 +374,16 @@ Object.assign(UI, {
   _dayModalSummary({ desc, pop, kind, when }) {
     let sky = desc || 'Mixed conditions';
     if (/^clear sky$/i.test(sky)) sky = 'Clear';
-    let line = `${sky} all day`;
-    if (!(pop > 0)) return `${line}.`;
+    if (!(pop > 0)) return `${sky} all day.`;
     const n = Math.round(pop);
-    const article = /^(8|11|18)/.test(String(n)) ? 'an' : 'a';
-    let chance = `${article} ${n}% chance`;
-    if (kind === 'rain' || kind === 'snow' || kind === 'thunder') {
-      const named = new RegExp(kind, 'i').test(sky);
-      if (!named) chance += ` of ${kind}`;
+    let what = '';
+    if ((kind === 'rain' || kind === 'snow' || kind === 'thunder') && !new RegExp(kind, 'i').test(sky)) {
+      what = ` of ${kind}`;
     }
-    const whenBit = when && when !== 'through the day' ? ` ${when}` : '';
-    return `${line}, with ${chance}${whenBit}.`;
+    if (!when || when === 'through the day' || when === 'from the early morning through the evening') {
+      return `${sky} all day, with a ${n}% chance${what}.`;
+    }
+    return `${sky} all day. The ${n}% chance${what} is ${when}.`;
   },
 
   _hourlyPaneHTML(modalIndex) {
