@@ -4,6 +4,10 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
+## 0.9.6 — 2026-11-25
+
+- Day cards and the Now card say the day's picture in plain language. A high chance on a clear or cloudy day says whether those hours stay dry, bring drizzle, or are split between the two.
+
 ## 0.9.5 — 2026-11-25
 
 - A high chance with a clear or cloudy day icon says the picture is on the most hours, then when that chance falls, and whether those hours are dry or show drizzle, rain, snow, or thunder. The Now card uses the same split. "All day" is only when every hour is that picture.

@@ -300,12 +300,50 @@ const sunday = {
 const sundayIcon = WeatherIcons.dayIcon('2026-11-29', sunday, null, 'UTC');
 const sundayExplain = Utils.explainChance('2026-11-29', sunday, null, 'UTC', sundayIcon, false);
 const sundayLine = Utils.dayCardLine(Utils.getWeatherDescription(sundayIcon), 66, sundayExplain, sundayIcon);
-const sundayWant = 'Clear is the picture on the most hours. The 66% chance is from the early morning through the morning, with nothing falling on most of those hours and light drizzle on some.';
+const sundayWant = 'Clear for most of the day, with a 66% chance from the early morning through the morning, mostly dry, with light drizzle at times.';
 if (sundayLine !== sundayWant) {
   console.error('dry high chance must stay sky, drizzle stays drizzle', sundayLine); process.exit(1);
 }
-if (/overnight|\brain\b/.test(sundayLine)) {
-  console.error('sunday line must not say overnight or rain', sundayLine); process.exit(1);
+if (/overnight|\brain\b|picture on the most|nothing falling/.test(sundayLine)) {
+  console.error('sunday line must stay plain, and must not say overnight or rain', sundayLine); process.exit(1);
+}
+const dryAfternoon = {
+  time: ['2026-11-28T12:00','2026-11-28T13:00','2026-11-28T14:00','2026-11-28T15:00','2026-11-28T18:00'],
+  weather_code: [0,0,0,0,1],
+  precipitation_probability: [20,70,68,55,5],
+  precipitation: [0,0,0,0,0],
+  snowfall: [0,0,0,0,0],
+  cloud_cover: [0,5,5,10,20],
+};
+const dryIcon = WeatherIcons.dayIcon('2026-11-28', dryAfternoon, null, 'UTC');
+const dryExplain = Utils.explainChance('2026-11-28', dryAfternoon, null, 'UTC', dryIcon, false);
+const dryLine = Utils.dayCardLine(Utils.getWeatherDescription(dryIcon), 70, dryExplain, dryIcon);
+if (dryLine !== 'Clear for most of the day, with a 70% chance around midday, though those hours stay dry.') {
+  console.error('a high chance with no rain keeps the sky and says so', dryLine); process.exit(1);
+}
+const wetDay = {
+  time: ['2026-11-28T09:00','2026-11-28T12:00','2026-11-28T15:00','2026-11-28T18:00'],
+  weather_code: [61,61,61,61],
+  precipitation_probability: [80,90,85,70],
+  precipitation: [1,2,1.5,0.4],
+  snowfall: [0,0,0,0],
+  cloud_cover: [90,95,95,80],
+};
+const wetIcon = WeatherIcons.dayIcon('2026-11-28', wetDay, null, 'UTC');
+const wetExplain = Utils.explainChance('2026-11-28', wetDay, null, 'UTC', wetIcon, false);
+const wetLine = Utils.dayCardLine(Utils.getWeatherDescription(wetIcon), 90, wetExplain, wetIcon);
+if (wetLine !== 'Rain all day, with a 90% chance of rain.') {
+  console.error('a wet day may name rain on the chance', wetLine); process.exit(1);
+}
+const nowSunday = Utils.nowCardLine('Clear sky', 66, sundayExplain, '8°C', '5°C', '0.8 mm', sundayIcon);
+if (!/^Today is clear for most of the day, reaching 8°C and falling to 5°C\. A 66% chance from the early morning through the morning, mostly dry, with light drizzle at times, around 0\.8 mm\.$/.test(nowSunday)) {
+  console.error('now card uses the same chance wording, plus the wet total', nowSunday); process.exit(1);
+}
+const evenLine = Utils.dayCardLine('Clear sky', 65, {
+  when: 'from the early morning through the morning', allSame: false, dry: 3, wet: 3, wetWord: 'light drizzle', hours: 24,
+}, 0);
+if (evenLine !== 'Clear for most of the day, with a 65% chance from the early morning through the morning, half dry and half light drizzle.') {
+  console.error('an even dry and wet split stays plain', evenLine); process.exit(1);
 }
 const allDayHours = {
   time: ['2026-11-19T08:00', '2026-11-19T14:00', '2026-11-19T20:00'],

@@ -457,56 +457,62 @@ const Utils = {
     return desc;
   },
 
-  // Day card. One percentage, the day-row chance. A chance over 50% says
-  // whether those hours have anything falling, because a dry hour keeps its sky icon.
-  dayCardLine(desc, pop, explain, iconCode) {
-    const name = this.pictureName(desc);
-    const head = explain && explain.allSame
-      ? `${name} all day`
-      : `${name} is the picture on the most hours`;
-    if (!(pop > 0)) return `${head}.`;
-    const n = Math.round(pop);
-    const when = explain && explain.when;
-    if (!when) return `${head}, with a ${n}% chance.`;
-    if (explain.allSame && when === 'through the day' && !(pop > 50)) {
-      return `${name} all day, with a ${n}% chance.`;
-    }
-    const dayWet = typeof WeatherIcons !== 'undefined' && iconCode != null && WeatherIcons._isWet(iconCode);
-    let tail = `The ${n}% chance is ${when}`;
-    if (pop > 50 && dayWet) {
-      const word = (explain.wetWord || name).toLowerCase();
-      tail = `The ${n}% chance of ${word} is ${when}`;
-    } else if (pop > 50 && explain) {
-      const wet = explain.wet || 0;
-      const dry = explain.dry || 0;
-      if (wet === 0) tail += ', with nothing falling, so the icon stays sky';
-      else if (dry === 0) tail += `, and those hours show ${explain.wetWord}`;
-      else if (dry > wet) tail += `, with nothing falling on most of those hours and ${explain.wetWord} on some`;
-      else if (wet > dry) tail += `, with ${explain.wetWord} on most of those hours and nothing falling on some`;
-      else tail += `, with nothing falling on some of those hours and ${explain.wetWord} on some`;
-    }
-    return `${head}. ${tail}.`;
+  chanceArticle(n) {
+    return /^(8|11|18)/.test(String(n)) ? 'an' : 'a';
   },
 
-  // Now card. Same picture and the same chance split, plus today's high, low,
+  // "All day" only when every hour is that picture. Otherwise name it as most of the day.
+  dayLead(name, allSame) {
+    return allSame ? `${name} all day` : `${name} for most of the day`;
+  },
+
+  // Chance half of a day card or the Now card. No capital, no full stop.
+  // Over 50% on a sky day says whether those hours stay dry, so a clear icon
+  // and a high chance can both be true. The wet word is the icon's own word.
+  chanceClause(name, pop, explain, iconCode) {
+    if (!(pop > 0)) return '';
+    const n = Math.round(pop);
+    let when = explain && explain.when ? explain.when : '';
+    const allSame = !!(explain && explain.allSame);
+    if (allSame && when === 'through the day') when = '';
+    const dayWet = typeof WeatherIcons !== 'undefined' && iconCode != null && WeatherIcons._isWet(iconCode);
+    let clause = `${this.chanceArticle(n)} ${n}% chance`;
+    if (pop > 50 && dayWet) clause += ` of ${((explain && explain.wetWord) || name).toLowerCase()}`;
+    if (when) clause += ` ${when}`;
+    if (!(pop > 50) || dayWet || !explain || !when) return clause;
+    const wet = explain.wet || 0;
+    const dry = explain.dry || 0;
+    const word = explain.wetWord;
+    if (wet === 0) clause += ', though those hours stay dry';
+    else if (dry === 0 && word) clause += `, bringing ${word}`;
+    else if (word && dry > wet) clause += `, mostly dry, with ${word} at times`;
+    else if (word && wet > dry) clause += `, mostly ${word}, with some dry hours`;
+    else if (word) clause += `, half dry and half ${word}`;
+    return clause;
+  },
+
+  dayCardLine(desc, pop, explain, iconCode) {
+    const name = this.pictureName(desc);
+    const lead = this.dayLead(name, !!(explain && explain.allSame));
+    const clause = this.chanceClause(name, pop, explain, iconCode);
+    if (!clause) return `${lead}.`;
+    return `${lead}, with ${clause}.`;
+  },
+
+  // Now card. Same picture and the same chance wording, plus today's high, low,
   // and the wet-hour total. It is not the day-card sentence.
   nowCardLine(desc, pop, explain, high, low, amountLabel, iconCode) {
-    const name = this.pictureName(desc).toLowerCase();
-    const picture = explain && explain.allSame
-      ? `${name} all day`
-      : `${name} on the picture for the most hours`;
-    let open = `Today is ${picture}`;
+    const name = this.pictureName(desc);
+    const allSame = !!(explain && explain.allSame);
+    let open = `Today is ${name.toLowerCase()} ${allSame ? 'all day' : 'for most of the day'}`;
     if (high && high !== '—' && low && low !== '—') open += `, reaching ${high} and falling to ${low}`;
     else if (high && high !== '—') open += `, reaching ${high}`;
     else if (low && low !== '—') open += `, falling to ${low}`;
-    open += '.';
-    if (!(pop > 0) || !explain || !explain.when) return open;
-    const dayLine = this.dayCardLine(desc, pop, explain, iconCode);
-    const bits = dayLine.split('. ');
-    const tail = bits.length > 1 ? bits.slice(1).join('. ').replace(/\.$/, '') : '';
-    if (!tail) return open;
-    const extra = (amountLabel && explain.wet > 0 && pop > 50) ? `${tail}, around ${amountLabel}` : tail;
-    return `${open} ${extra}.`;
+    const clause = this.chanceClause(name, pop, explain, iconCode);
+    if (!clause) return `${open}.`;
+    let extra = clause.charAt(0).toUpperCase() + clause.slice(1);
+    if (amountLabel && explain && explain.wet > 0 && pop > 50) extra += `, around ${amountLabel}`;
+    return `${open}. ${extra}.`;
   },
 
   formatTime(isoString, tz) {
