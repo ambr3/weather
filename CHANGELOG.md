@@ -4,6 +4,11 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
+## 0.9.3 — 2026-11-25
+
+- A day card opens with a short summary: the day's sky, the same chance as the row, and when that chance falls.
+- The forecast footer says to tap a day for more, under the swipe mark.
+
 ## 0.9.2 — 2026-11-25
 
 - Forecast rows stay inside the card width on narrow and zoomed mobile screens (110%+ zoom) so the low-temperature column is never pushed off-screen.

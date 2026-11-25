@@ -298,6 +298,49 @@ const Utils = {
     return { when, pop, precip, hours };
   },
 
+  // When the day's shown chance falls. Same hours as the day row: that
+  // calendar day, and today only from the current hour forward. The peak
+  // band matches rainTiming so a small chance does not stretch the phrase.
+  // A dry hour still counts — the percentage is shown even when the icon stays sky.
+  chanceWhen(dateStr, hourly, nowMs, tz) {
+    const empty = { when: '' };
+    if (!dateStr || !hourly || !Array.isArray(hourly.time) || !hourly.precipitation_probability) return empty;
+    const nowKey = nowMs != null && Number.isFinite(Number(nowMs)) ? this.hourKey(Number(nowMs), tz) : '';
+    const slots = [];
+    for (let k = 0; k < hourly.time.length; k++) {
+      const t = String(hourly.time[k] || '');
+      if (!this.hourOnDate(t, dateStr, nowKey)) continue;
+      const pop = hourly.precipitation_probability[k];
+      if (pop == null || !(Number(pop) > 0)) continue;
+      const hour = Number(t.slice(11, 13));
+      if (!Number.isFinite(hour)) continue;
+      slots.push({ hour, pop: Number(pop) });
+    }
+    if (!slots.length) return empty;
+    const max = Math.max(...slots.map((s) => s.pop));
+    const cut = max >= 50 ? 50 : Math.max(1, max - 15);
+    const picked = slots.filter((s) => s.pop >= cut);
+    const morning = picked.some((s) => s.hour >= 6 && s.hour < 12);
+    const afternoon = picked.some((s) => s.hour >= 12 && s.hour < 18);
+    const evening = picked.some((s) => s.hour >= 18);
+    const early = picked.some((s) => s.hour < 6);
+    const today = !!nowKey;
+    let when = '';
+    if (morning && afternoon && evening) when = early ? 'through the day and overnight' : 'through the day';
+    else if (early && morning && afternoon) when = today ? 'overnight through this afternoon' : 'overnight through the afternoon';
+    else if (afternoon && evening) when = today ? 'this afternoon and evening' : 'in the afternoon and evening';
+    else if (morning && afternoon) when = today ? 'this morning and afternoon' : 'in the morning and afternoon';
+    else if (morning && evening) when = today ? 'this morning and evening' : 'in the morning and evening';
+    else if (evening && early) when = today ? 'this evening and overnight' : 'in the evening and overnight';
+    else if (morning && early) when = today ? 'overnight and this morning' : 'overnight and in the morning';
+    else if (afternoon && early) when = today ? 'overnight and this afternoon' : 'overnight and in the afternoon';
+    else if (morning) when = today ? 'this morning' : 'in the morning';
+    else if (afternoon) when = today ? 'this afternoon' : 'in the afternoon';
+    else if (evening) when = today ? 'this evening' : 'in the evening';
+    else if (early) when = 'overnight';
+    return { when };
+  },
+
   formatTime(isoString, tz) {
     const d = isoString instanceof Date ? isoString : new Date(isoString);
     let out;

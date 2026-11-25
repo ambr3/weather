@@ -261,6 +261,27 @@ const afternoon = Utils.rainTiming('2026-11-19', rainHours, null, 'UTC');
 if (afternoon.when !== 'this afternoon' || afternoon.pop !== 100) {
   console.error('rain timing afternoon', afternoon); process.exit(1);
 }
+const eveningChance = Utils.chanceWhen('2026-11-30', {
+  time: ['2026-11-30T09:00', '2026-11-30T15:00', '2026-11-30T19:00'],
+  precipitation_probability: [10, 20, 67],
+}, null, 'UTC');
+if (eveningChance.when !== 'in the evening') {
+  console.error('day chance should name the evening peak, not the small hours', eveningChance); process.exit(1);
+}
+const todayEvening = Utils.chanceWhen('2026-11-30', {
+  time: ['2026-11-30T09:00', '2026-11-30T19:00'],
+  precipitation_probability: [80, 67],
+}, Utils.parseLocal('2026-11-30T12:00', 'UTC').getTime(), 'UTC');
+if (todayEvening.when !== 'this evening') {
+  console.error('past morning chance must not set today\'s phrase', todayEvening); process.exit(1);
+}
+const overnightPeak = Utils.chanceWhen('2026-11-27', {
+  time: ['2026-11-27T04:00', '2026-11-27T09:00', '2026-11-27T12:00', '2026-11-27T18:00'],
+  precipitation_probability: [91, 70, 51, 20],
+}, null, 'UTC');
+if (overnightPeak.when !== 'overnight through the afternoon') {
+  console.error('overnight peak must stay in the phrase', overnightPeak); process.exit(1);
+}
 const allDayHours = {
   time: ['2026-11-19T08:00', '2026-11-19T14:00', '2026-11-19T20:00'],
   weather_code: [61, 61, 61],
@@ -615,6 +636,8 @@ grep -q 'dayNightTemps' js/utils.js || bad "Utils.dayNightTemps missing"
 grep -q 'dayNightTemps' js/ui-forecast.js || bad "forecast must use dayNightTemps"
 grep -q 'dayNightTemps' js/ui-current.js || bad "current High/Low must use dayNightTemps"
 grep -q 'dayNightTemps' js/ui-modal.js || bad "day modal must use dayNightTemps"
+grep -q 'hourly-modal__summary' js/ui-modal.js css/style.css || bad "day modal summary missing"
+grep -q 'chanceWhen' js/utils.js js/ui-modal.js || bad "day chance timing missing"
 grep -q 'hourIcon' js/icons.js || bad "hourIcon consistency helper missing"
 grep -q 'dayIcon' js/icons.js js/ui-details.js || bad "dayIcon missing"
 ! grep -q 'leadPrecipCode\|dailyIcon\|dominantDayCode' js/icons.js js/ui.js js/ui-*.js || bad "old day-icon shortcuts are back"
@@ -626,6 +649,7 @@ grep -q 'hourly-strip__tab' js/ui.js js/ui-*.js css/style.css || bad "hourly day
 grep -q '_bindHourlyDayNav' js/ui.js js/ui-*.js || bad "hourly day tab/swipe sync missing"
 grep -q 'Now → forward only' js/ui.js js/ui-*.js || bad "hourly Now-start comment missing"
 grep -q 'forecast-card__pagerlead' js/ui-forecast.js || bad "forecast swipe mark missing"
+grep -q 'Tap a day for more' js/ui-forecast.js || bad "forecast tap-for-more hint missing"
 grep -q 'hourly-strip__hint-hours' js/ui-forecast.js || bad "hourly swipe mark missing"
 grep -q 'Swipe to change chart' js/ui-chart.js || bad "chart swipe mark missing"
 grep -A2 'No data available for this chart' js/ui-chart.js | grep -q 'Swipe to change chart' || bad "empty chart swipe mark missing"

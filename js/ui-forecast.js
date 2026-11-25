@@ -66,6 +66,7 @@ Object.assign(UI, {
             <span class="forecast-card__pagerlead">Swipe</span>
             <span class="forecast-card__pagerrange">days 1–7</span>
           </span>
+          <span class="forecast-card__pagertap">Tap a day for more</span>
         </div>
       </div>
     `;

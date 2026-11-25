@@ -368,6 +368,25 @@ Object.assign(UI, {
     return open;
   },
 
+  // Short line on the day card. Sky word is the day icon. The percentage is
+  // the same number as the day row. Rain, snow, or thunder is named only when
+  // that icon is wet. "Through the day" is dropped so it does not repeat "all day".
+  _dayModalSummary({ desc, pop, kind, when }) {
+    let sky = desc || 'Mixed conditions';
+    if (/^clear sky$/i.test(sky)) sky = 'Clear';
+    let line = `${sky} all day`;
+    if (!(pop > 0)) return `${line}.`;
+    const n = Math.round(pop);
+    const article = /^(8|11|18)/.test(String(n)) ? 'an' : 'a';
+    let chance = `${article} ${n}% chance`;
+    if (kind === 'rain' || kind === 'snow' || kind === 'thunder') {
+      const named = new RegExp(kind, 'i').test(sky);
+      if (!named) chance += ` of ${kind}`;
+    }
+    const whenBit = when && when !== 'through the day' ? ` ${when}` : '';
+    return `${line}, with ${chance}${whenBit}.`;
+  },
+
   _hourlyPaneHTML(modalIndex) {
     const h = this._hourly;
     if (!h || !h.time) return '';
@@ -475,12 +494,21 @@ Object.assign(UI, {
     const rainLabel = Utils.formatPrecip(rainSum, units) || rainZero;
     const sunRaw = d.sunshine_duration && d.sunshine_duration[modalIndex];
     const sunshineLabel = sunRaw === 0 ? 'None' : sunshine;
+    const isToday = String(date) === this._todayDateKey();
+    const when = Utils.chanceWhen(date, this._forecastHourly, isToday ? Date.now() : null, this._tz).when;
+    const summary = this._dayModalSummary({
+      desc: Utils.getWeatherDescription(outlook ? outlook.iconCode : WeatherIcons.dayIcon(date, this._forecastHourly, isToday ? Date.now() : null, this._tz)),
+      pop,
+      kind: outlook && outlook.kind ? outlook.kind : '',
+      when,
+    });
     const row = (label, value, opts) => this._statRow(label, value, opts);
     const feelsHtml = feelsHigh != null && feelsLow != null && feelsHighRaw != null;
     return `
       <div class="hourly-modal__pane">
         <div class="hourly-modal__head">${this._esc(weekdayShort)} · ${this._esc(dateHeading)}</div>
         <div class="hourly-modal__temp${tempTone ? ` temp-tone-${tempTone}` : ''}">${this._esc(high)}<span class="hourly-modal__temp-low"> / ${this._esc(low)}</span></div>
+        <p class="hourly-modal__summary">${this._esc(summary)}</p>
         <div class="hourly-modal__list">
           ${row('Feels like', feelsVal, { html: feelsHtml })}
           ${row('Chance', pop > 0 ? `${Math.round(pop)}%` : null)}
