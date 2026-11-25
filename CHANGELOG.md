@@ -4,6 +4,10 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
+## 0.9.2 — 2026-11-25
+
+- Forecast rows stay inside the card width on narrow and zoomed mobile screens (110%+ zoom) so the low-temperature column is never pushed off-screen.
+
 ## 0.9.1 — 2026-11-24
 
 - Empty chart views keep the "Swipe to change chart" mark, matching charts with data.

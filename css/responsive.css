@@ -249,13 +249,56 @@
   }
 
   .forecast-card__row {
-    padding: 0.65rem 0.75rem;
-    gap: 0.7rem;
+    padding: 0.65rem 0.7rem;
+    gap: 0.45rem;
+  }
+
+  .forecast-card__day {
+    min-width: 3.35rem;
+  }
+
+  .forecast-card__weekday {
+    font-size: 0.92rem;
+  }
+
+  .forecast-card__date {
+    font-size: 0.74rem;
   }
 
   .forecast-card__row-icon {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .forecast-card__row-label {
+    font-size: 0.86rem;
+  }
+
+  .forecast-card__chance {
+    min-width: 2.2rem;
+  }
+
+  .forecast-card__chance-num {
+    font-size: 0.78rem;
+  }
+
+  .forecast-card__chance-kind {
+    font-size: 0.62rem;
+  }
+
+  .forecast-card__row-temps {
+    gap: 0.35rem;
+    min-width: 3.65rem;
+  }
+
+  .forecast-card__high {
+    min-width: 1.7rem;
+    font-size: 1.12rem;
+  }
+
+  .forecast-card__low {
+    min-width: 1.6rem;
+    font-size: 0.9rem;
   }
 
   .section-title {
@@ -267,6 +310,45 @@
     font-size: 0.85rem;
   }
 
+}
+
+@media (max-width: 360px) {
+  .forecast-card__row {
+    padding: 0.6rem 0.65rem;
+    gap: 0.35rem;
+  }
+
+  .forecast-card__day {
+    min-width: 3.1rem;
+  }
+
+  .forecast-card__row-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .forecast-card__row-label {
+    font-size: 0.82rem;
+  }
+
+  .forecast-card__chance {
+    min-width: 2rem;
+  }
+
+  .forecast-card__row-temps {
+    gap: 0.25rem;
+    min-width: 3.35rem;
+  }
+
+  .forecast-card__high {
+    min-width: 1.55rem;
+    font-size: 1.05rem;
+  }
+
+  .forecast-card__low {
+    min-width: 1.45rem;
+    font-size: 0.86rem;
+  }
 }
 
 @media (min-width: 1024px) {

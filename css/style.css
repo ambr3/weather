@@ -2569,6 +2569,9 @@ html[data-theme="dark"] body::after {
 
 .forecast-card__page {
   flex: 0 0 100%;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   scroll-snap-align: start;
   scroll-snap-stop: always;
   display: flex;
@@ -2651,6 +2654,8 @@ html[data-theme="dark"] body::after {
   display: flex;
   align-items: center;
   gap: 0.9rem;
+  width: 100%;
+  min-width: 0;
   padding: 0.8rem 1.1rem;
   min-height: 4.35rem;
   box-sizing: border-box;
