@@ -348,44 +348,6 @@ Object.assign(UI, {
     return `<div class="hourly-modal__row"><span class="hourly-modal__row-label">${safeLabel}</span><span class="hourly-modal__row-value">${safeValue}</span></div>`;
   },
 
-  // Day blurb on the Now card: sky + temps + chance.
-  // Rain, snow, or thunder is named only when that hour's icon is wet.
-  _dayStory({ weekday, desc, high, low, pop, rainLabel, kind, when }) {
-    const dayName = weekday === 'Today' ? 'Today' : weekday;
-    const sky = (desc || 'mixed conditions').toLowerCase();
-    const what = kind === 'snow' || kind === 'thunder' || kind === 'rain' ? kind : '';
-    const whenBit = when ? ` ${when}` : '';
-    let open = `${dayName} is ${sky}`;
-    if (high !== '—' && low !== '—') open += `, reaching ${high} and falling to ${low}`;
-    else if (high !== '—') open += `, reaching ${high}`;
-    else if (low !== '—') open += `, falling to ${low}`;
-    open += '.';
-    const chance = pop >= 100 ? `A ${Math.round(pop)}% chance` : `About a ${Math.round(pop)}% chance`;
-    if (pop > 0 && what && rainLabel) open += ` ${chance} of ${what}${whenBit}, around ${rainLabel}.`;
-    else if (pop > 0 && what) open += ` ${chance} of ${what}${whenBit}.`;
-    else if (pop > 0) open += ` ${chance}${whenBit}.`;
-    else if (rainLabel && what) open += ` Around ${rainLabel} of ${what}${whenBit}.`;
-    return open;
-  },
-
-  // Short line on the day card. Sky word is the day icon. The percentage is
-  // the same number as the day row. Rain, snow, or thunder is named only when
-  // that icon is wet. "Through the day" is dropped so it does not repeat "all day".
-  _dayModalSummary({ desc, pop, kind, when }) {
-    let sky = desc || 'Mixed conditions';
-    if (/^clear sky$/i.test(sky)) sky = 'Clear';
-    if (!(pop > 0)) return `${sky} all day.`;
-    const n = Math.round(pop);
-    let what = '';
-    if ((kind === 'rain' || kind === 'snow' || kind === 'thunder') && !new RegExp(kind, 'i').test(sky)) {
-      what = ` of ${kind}`;
-    }
-    if (!when || when === 'through the day' || when === 'from the early morning through the evening') {
-      return `${sky} all day, with a ${n}% chance${what}.`;
-    }
-    return `${sky} all day. The ${n}% chance${what} is ${when}.`;
-  },
-
   _hourlyPaneHTML(modalIndex) {
     const h = this._hourly;
     if (!h || !h.time) return '';
@@ -494,13 +456,9 @@ Object.assign(UI, {
     const sunRaw = d.sunshine_duration && d.sunshine_duration[modalIndex];
     const sunshineLabel = sunRaw === 0 ? 'None' : sunshine;
     const isToday = String(date) === this._todayDateKey();
-    const when = Utils.chanceWhen(date, this._forecastHourly, isToday ? Date.now() : null, this._tz).when;
-    const summary = this._dayModalSummary({
-      desc: Utils.getWeatherDescription(outlook ? outlook.iconCode : WeatherIcons.dayIcon(date, this._forecastHourly, isToday ? Date.now() : null, this._tz)),
-      pop,
-      kind: outlook && outlook.kind ? outlook.kind : '',
-      when,
-    });
+    const iconCode = outlook ? outlook.iconCode : WeatherIcons.dayIcon(date, this._forecastHourly, isToday ? Date.now() : null, this._tz);
+    const explain = Utils.explainChance(date, this._forecastHourly, isToday ? Date.now() : null, this._tz, iconCode, false);
+    const summary = Utils.dayCardLine(Utils.getWeatherDescription(iconCode), pop, explain, iconCode);
     const row = (label, value, opts) => this._statRow(label, value, opts);
     const feelsHtml = feelsHigh != null && feelsLow != null && feelsHighRaw != null;
     return `

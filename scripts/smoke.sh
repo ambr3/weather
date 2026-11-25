@@ -282,6 +282,31 @@ const overnightPeak = Utils.chanceWhen('2026-11-27', {
 if (overnightPeak.when !== 'from the early morning until midday') {
   console.error('early-morning peak must stay in clock order', overnightPeak); process.exit(1);
 }
+const sunday = {
+  time: [
+    '2026-11-29T00:00','2026-11-29T01:00','2026-11-29T02:00','2026-11-29T03:00',
+    '2026-11-29T04:00','2026-11-29T05:00','2026-11-29T06:00','2026-11-29T07:00',
+    '2026-11-29T08:00','2026-11-29T09:00','2026-11-29T10:00','2026-11-29T11:00',
+    '2026-11-29T12:00','2026-11-29T13:00','2026-11-29T14:00','2026-11-29T15:00',
+    '2026-11-29T16:00','2026-11-29T17:00','2026-11-29T18:00','2026-11-29T19:00',
+    '2026-11-29T20:00','2026-11-29T21:00','2026-11-29T22:00','2026-11-29T23:00',
+  ],
+  weather_code: [51,2,2,3, 51,51,51,3, 2,2,1,0, 0,0,0,0, 0,0,0,1, 2,3,3,3],
+  precipitation_probability: [65,66,66,65, 63,61,59,59, 59,57,51,42, 33,25,17,10, 5,2,0,0, 1,2,2,1],
+  precipitation: [0.2,0,0,0, 0.2,0.2,0.2,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
+  snowfall: [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
+  cloud_cover: [55,62,79,91, 95,95,91,81, 66,50,33,15, 2,0,0,0, 0,0,0,24, 58,84,95,99],
+};
+const sundayIcon = WeatherIcons.dayIcon('2026-11-29', sunday, null, 'UTC');
+const sundayExplain = Utils.explainChance('2026-11-29', sunday, null, 'UTC', sundayIcon, false);
+const sundayLine = Utils.dayCardLine(Utils.getWeatherDescription(sundayIcon), 66, sundayExplain, sundayIcon);
+const sundayWant = 'Clear is the picture on the most hours. The 66% chance is from the early morning through the morning, with nothing falling on most of those hours and light drizzle on some.';
+if (sundayLine !== sundayWant) {
+  console.error('dry high chance must stay sky, drizzle stays drizzle', sundayLine); process.exit(1);
+}
+if (/overnight|\brain\b/.test(sundayLine)) {
+  console.error('sunday line must not say overnight or rain', sundayLine); process.exit(1);
+}
 const allDayHours = {
   time: ['2026-11-19T08:00', '2026-11-19T14:00', '2026-11-19T20:00'],
   weather_code: [61, 61, 61],

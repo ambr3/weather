@@ -36,16 +36,15 @@ Object.assign(UI, {
       snow: nowObs.snow,
       cloud: nowObs ? nowObs.cloudCover : c.cloud_cover,
     } : null);
-    const outlookText = outlook ? this._dayStory({
-      weekday: 'Today',
-      desc: Utils.getWeatherDescription(outlook.iconCode),
-      high: dayHigh || '—',
-      low: dayLow || '—',
-      pop: rain.pop,
-      rainLabel: Utils.formatPrecip(rain.precip, units),
-      kind: WeatherIcons.kindFromHours(rain.hours),
-      when: rain.when,
-    }) : '';
+    const outlookText = outlook ? Utils.nowCardLine(
+      Utils.getWeatherDescription(outlook.iconCode),
+      outlook.pop,
+      Utils.explainChance(todayKey, data.hourly, Date.now(), this._tz, outlook.iconCode, true),
+      dayHigh || '—',
+      dayLow || '—',
+      Utils.formatPrecip(rain.precip, units),
+      outlook.iconCode
+    ) : '';
 
     const SUN_R = 42;
     const MOON_R = 36;

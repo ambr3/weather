@@ -344,7 +344,7 @@ const Utils = {
     const a = on[0];
     const b = on[on.length - 1];
     if (a === 'early' && b === 'midday') return { when: 'from the early morning until midday', span: true };
-    if (a === 'early' && b === 'morning') return { when: 'through the early morning', span: true };
+    if (a === 'early' && b === 'morning') return { when: 'from the early morning through the morning', span: true };
     return { when: `from ${fromWord[a]} through ${fromWord[b]}`, span: true };
   },
 
@@ -375,6 +375,138 @@ const Utils = {
     const peak = picked.reduce((best, s) => (s.pop > best.pop ? s : best), picked[0]);
     if (spanHours <= 4) return this.partPhrase({ [peak.part]: true }, !!nowKey);
     return this.partPhrase(this._partFlags(picked), !!nowKey);
+  },
+
+  // Peak-chance hours for one day, split into sky hours and wet-icon hours.
+  // includeTonight adds the next date's 00:00–05:59. That is the Now card only.
+  explainChance(dateStr, hourly, nowMs, tz, iconCode, includeTonight) {
+    const out = {
+      when: '', span: false, dry: 0, wet: 0, wetWord: '', wetPrecip: 0, allSame: false, hours: 0,
+    };
+    if (!dateStr || !hourly || !Array.isArray(hourly.time) || typeof WeatherIcons === 'undefined') return out;
+    const nowKey = nowMs != null && Number.isFinite(Number(nowMs)) ? this.hourKey(Number(nowMs), tz) : '';
+    const nextKey = includeTonight && nowKey ? this.nextDateKey(dateStr) : '';
+    const picture = iconCode != null ? WeatherIcons._group(iconCode) : '';
+    let same = picture !== '';
+    const slots = [];
+    for (let k = 0; k < hourly.time.length; k++) {
+      const t = String(hourly.time[k] || '');
+      const onDate = this.hourOnDate(t, dateStr, nowKey);
+      const onTonight = nextKey && t.startsWith(nextKey + 'T') && this.hourInWindow(t, dateStr, nowKey);
+      if (!onDate && !onTonight) continue;
+      const code = hourly.weather_code ? hourly.weather_code[k] : null;
+      const pop = hourly.precipitation_probability ? hourly.precipitation_probability[k] : null;
+      const precip = hourly.precipitation && hourly.precipitation[k] != null ? Number(hourly.precipitation[k]) : 0;
+      const snow = hourly.snowfall && hourly.snowfall[k] != null ? Number(hourly.snowfall[k]) : 0;
+      const cloud = hourly.cloud_cover ? hourly.cloud_cover[k] : null;
+      if (code == null && pop == null) continue;
+      const icon = WeatherIcons.hourIcon(code, pop, Number.isFinite(precip) ? precip : 0, Number.isFinite(snow) ? snow : 0, cloud);
+      if (onDate) {
+        out.hours += 1;
+        if (picture && WeatherIcons._group(icon) !== picture) same = false;
+      }
+      const p = pop == null ? null : Number(pop);
+      if (p == null || !(p > 0)) continue;
+      const hour = Number(t.slice(11, 13));
+      if (!Number.isFinite(hour)) continue;
+      slots.push({
+        hour,
+        pop: p,
+        icon,
+        precip: Number.isFinite(precip) ? precip : 0,
+        part: onTonight ? 'tonight' : this._clockPart(hour),
+      });
+    }
+    out.allSame = out.hours > 0 && same;
+    if (!slots.length) return out;
+    const max = Math.max(...slots.map((s) => s.pop));
+    const cut = max >= 50 ? 50 : Math.max(1, max - 15);
+    const picked = slots.filter((s) => s.pop >= cut);
+    const hours = picked.map((s) => s.hour);
+    const spanHours = Math.max(...hours) - Math.min(...hours);
+    const peak = picked.reduce((best, s) => (s.pop > best.pop ? s : best), picked[0]);
+    const tonight = picked.some((s) => s.part === 'tonight');
+    const phrase = (!tonight && spanHours <= 4)
+      ? this.partPhrase({ [peak.part]: true }, !!nowKey)
+      : this.partPhrase(this._partFlags(picked), !!nowKey);
+    out.when = phrase.when;
+    out.span = phrase.span;
+    const words = new Map();
+    picked.forEach((s) => {
+      if (WeatherIcons._isWet(s.icon)) {
+        out.wet += 1;
+        out.wetPrecip += s.precip;
+        const word = this.getWeatherDescription(s.icon).toLowerCase();
+        words.set(word, (words.get(word) || 0) + 1);
+      } else {
+        out.dry += 1;
+      }
+    });
+    let bestWord = '';
+    let bestN = 0;
+    words.forEach((n, word) => {
+      if (n > bestN) { bestN = n; bestWord = word; }
+    });
+    out.wetWord = bestWord;
+    return out;
+  },
+
+  pictureName(desc) {
+    if (!desc) return 'Mixed conditions';
+    if (/^clear sky$/i.test(desc)) return 'Clear';
+    return desc;
+  },
+
+  // Day card. One percentage, the day-row chance. A chance over 50% says
+  // whether those hours have anything falling, because a dry hour keeps its sky icon.
+  dayCardLine(desc, pop, explain, iconCode) {
+    const name = this.pictureName(desc);
+    const head = explain && explain.allSame
+      ? `${name} all day`
+      : `${name} is the picture on the most hours`;
+    if (!(pop > 0)) return `${head}.`;
+    const n = Math.round(pop);
+    const when = explain && explain.when;
+    if (!when) return `${head}, with a ${n}% chance.`;
+    if (explain.allSame && when === 'through the day' && !(pop > 50)) {
+      return `${name} all day, with a ${n}% chance.`;
+    }
+    const dayWet = typeof WeatherIcons !== 'undefined' && iconCode != null && WeatherIcons._isWet(iconCode);
+    let tail = `The ${n}% chance is ${when}`;
+    if (pop > 50 && dayWet) {
+      const word = (explain.wetWord || name).toLowerCase();
+      tail = `The ${n}% chance of ${word} is ${when}`;
+    } else if (pop > 50 && explain) {
+      const wet = explain.wet || 0;
+      const dry = explain.dry || 0;
+      if (wet === 0) tail += ', with nothing falling, so the icon stays sky';
+      else if (dry === 0) tail += `, and those hours show ${explain.wetWord}`;
+      else if (dry > wet) tail += `, with nothing falling on most of those hours and ${explain.wetWord} on some`;
+      else if (wet > dry) tail += `, with ${explain.wetWord} on most of those hours and nothing falling on some`;
+      else tail += `, with nothing falling on some of those hours and ${explain.wetWord} on some`;
+    }
+    return `${head}. ${tail}.`;
+  },
+
+  // Now card. Same picture and the same chance split, plus today's high, low,
+  // and the wet-hour total. It is not the day-card sentence.
+  nowCardLine(desc, pop, explain, high, low, amountLabel, iconCode) {
+    const name = this.pictureName(desc).toLowerCase();
+    const picture = explain && explain.allSame
+      ? `${name} all day`
+      : `${name} on the picture for the most hours`;
+    let open = `Today is ${picture}`;
+    if (high && high !== '—' && low && low !== '—') open += `, reaching ${high} and falling to ${low}`;
+    else if (high && high !== '—') open += `, reaching ${high}`;
+    else if (low && low !== '—') open += `, falling to ${low}`;
+    open += '.';
+    if (!(pop > 0) || !explain || !explain.when) return open;
+    const dayLine = this.dayCardLine(desc, pop, explain, iconCode);
+    const bits = dayLine.split('. ');
+    const tail = bits.length > 1 ? bits.slice(1).join('. ').replace(/\.$/, '') : '';
+    if (!tail) return open;
+    const extra = (amountLabel && explain.wet > 0 && pop > 50) ? `${tail}, around ${amountLabel}` : tail;
+    return `${open} ${extra}.`;
   },
 
   formatTime(isoString, tz) {
