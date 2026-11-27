@@ -29,22 +29,25 @@ Object.assign(UI, {
     const dayHigh = todayPair.high != null ? Utils.formatTemp(todayPair.high, units) : null;
     const dayLow = todayPair.low != null ? Utils.formatTemp(todayPair.low, units) : null;
     const todayKey = (d.time && d.time[0]) ? d.time[0] : this._todayDateKey();
-    const outlook = this.dayOutlook(todayKey, d, data.hourly, units);
     const rain = Utils.rainTiming(todayKey, data.hourly, Date.now(), this._tz, nowObs ? {
       code: nowObs.code,
       precip: nowObs.precip,
       snow: nowObs.snow,
       cloud: nowObs ? nowObs.cloudCover : c.cloud_cover,
     } : null);
-    const outlookText = outlook ? Utils.nowCardLine(
-      Utils.getWeatherDescription(outlook.iconCode),
-      outlook.pop,
-      Utils.explainChance(todayKey, data.hourly, Date.now(), this._tz, outlook.iconCode, true),
+    const nowIcon = WeatherIcons.nowIcon(todayKey, data.hourly, Date.now(), this._tz);
+    const nowExplain = Utils.explainChance(todayKey, data.hourly, Date.now(), this._tz, nowIcon, true);
+    const forward = Utils.forwardMaxPop(todayKey, data.hourly, Date.now(), this._tz);
+    const outlookPop = forward && forward.max != null && forward.max > 0 ? Math.round(forward.max) : 0;
+    const outlookText = Utils.nowCardLine(
+      Utils.getWeatherDescription(nowIcon),
+      outlookPop,
+      nowExplain,
       dayHigh || '—',
       dayLow || '—',
       Utils.formatPrecip(rain.precip, units),
-      outlook.iconCode
-    ) : '';
+      nowIcon
+    );
 
     const SUN_R = 42;
     const MOON_R = 36;

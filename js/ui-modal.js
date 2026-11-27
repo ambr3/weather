@@ -456,9 +456,16 @@ Object.assign(UI, {
     const sunRaw = d.sunshine_duration && d.sunshine_duration[modalIndex];
     const sunshineLabel = sunRaw === 0 ? 'None' : sunshine;
     const isToday = String(date) === this._todayDateKey();
-    const iconCode = outlook ? outlook.iconCode : WeatherIcons.dayIcon(date, this._forecastHourly, isToday ? Date.now() : null, this._tz);
-    const explain = Utils.explainChance(date, this._forecastHourly, isToday ? Date.now() : null, this._tz, iconCode, false);
-    const summary = Utils.dayCardLine(Utils.getWeatherDescription(iconCode), pop, explain, iconCode);
+    const sun = {
+      rise: d.sunrise && d.sunrise[modalIndex],
+      set: d.sunset && d.sunset[modalIndex],
+    };
+    const iconCode = outlook ? outlook.iconCode : WeatherIcons.dayIcon(date, this._forecastHourly, isToday ? Date.now() : null, this._tz, sun.rise, sun.set);
+    const explain = Utils.explainChance(date, this._forecastHourly, isToday ? Date.now() : null, this._tz, iconCode, false, sun);
+    const dayName = isToday
+      ? 'today'
+      : parsed.toLocaleDateString('en-US', { timeZone: this._tz || undefined, weekday: 'long' });
+    const summary = Utils.dayCardLine(dayName, Utils.getWeatherDescription(iconCode), pop, explain, iconCode);
     const row = (label, value, opts) => this._statRow(label, value, opts);
     const feelsHtml = feelsHigh != null && feelsLow != null && feelsHighRaw != null;
     return `

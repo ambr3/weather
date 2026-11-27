@@ -4,6 +4,12 @@ All notable changes to **Seclusa Weather**.
 
 ## Unreleased
 
+## 0.9.7 — 2026-11-27
+
+- Day icons, day-row percentages, the small rain/drizzle word, and enlarged day summaries now use the hours from sunrise up to sunset (with night hours staying on the hourly strip, and an after-sunset fallback for today).
+- The Now card uses its own picture and chance from the current hour through tonight, and collapses evening plus overnight into "tonight".
+- Day and Now summaries name what every percentage is a chance of, keeping drizzle as drizzle and using plain phrasing.
+
 ## 0.9.6 — 2026-11-25
 
 - Day cards and the Now card say the day's picture in plain language. A high chance on a clear or cloudy day says whether those hours stay dry, bring drizzle, or are split between the two.

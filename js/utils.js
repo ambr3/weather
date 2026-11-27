@@ -196,6 +196,23 @@ const Utils = {
   // nowKey set: that date from the current hour forward, plus the next
   // date's 00–05 (tonight after midnight). Past hours stay out.
   // nowKey empty: every hour of dateStr (a later forecast day).
+  // Sunrise up to sunset. Missing sun uses 06:00–18:00 local. Past hours stay out.
+  // This is not hourOnDate: night hours on the date do not count.
+  hourInDaylight(stamp, dateStr, nowKey, riseIso, setIso, tz) {
+    if (!this.hourOnDate(stamp, dateStr, nowKey)) return false;
+    const t = this.parseLocal(stamp, tz);
+    if (!t || !Number.isFinite(t.getTime())) return false;
+    const start = riseIso
+      ? this.parseLocal(riseIso, tz)
+      : this.parseLocal(`${dateStr}T06:00:00`, tz);
+    const end = setIso
+      ? this.parseLocal(setIso, tz)
+      : this.parseLocal(`${dateStr}T18:00:00`, tz);
+    if (!start || !end || !Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime())) return false;
+    const ms = t.getTime();
+    return ms >= start.getTime() && ms < end.getTime();
+  },
+
   hourInWindow(stamp, dateStr, nowKey) {
     const t = String(stamp || '');
     if (t.length < 13 || !dateStr) return false;
@@ -208,17 +225,38 @@ const Utils = {
     return hour >= 0 && hour < 6;
   },
 
-  // Highest precipitation_probability on that calendar day.
-  // Today (nowMs set) starts at the current hour. The next morning is
-  // tomorrow's figure. hasHours is true when the day has time stamps,
-  // even if every probability is null.
-  windowMaxPop(dateStr, hourly, nowMs, tz) {
+  // Highest chance from sunrise to sunset. Today drops hours already past.
+  // After sunset, when no daylight hours remain, use the hours still ahead.
+  // A later day with only night hours does not take that night chance.
+  windowMaxPop(dateStr, hourly, nowMs, tz, riseIso, setIso) {
+    const empty = { max: null, hasHours: false };
+    if (!dateStr || !hourly || !Array.isArray(hourly.time)) return empty;
+    const nowKey = nowMs != null && Number.isFinite(Number(nowMs)) ? this.hourKey(Number(nowMs), tz) : '';
+    const scan = (fn) => {
+      const out = { max: null, hasHours: false };
+      const probs = hourly.precipitation_probability;
+      for (let k = 0; k < hourly.time.length; k++) {
+        if (!fn(hourly.time[k])) continue;
+        out.hasHours = true;
+        const p = probs ? probs[k] : null;
+        if (p != null && Number.isFinite(Number(p)) && (out.max == null || Number(p) > out.max)) out.max = Number(p);
+      }
+      return out;
+    };
+    const day = scan((stamp) => this.hourInDaylight(stamp, dateStr, nowKey, riseIso, setIso, tz));
+    if (day.hasHours) return day;
+    if (!nowKey) return empty;
+    return scan((stamp) => this.hourOnDate(stamp, dateStr, nowKey));
+  },
+
+  // Highest chance from the current hour through tonight. The Now card only.
+  forwardMaxPop(dateStr, hourly, nowMs, tz) {
     const out = { max: null, hasHours: false };
     if (!dateStr || !hourly || !Array.isArray(hourly.time)) return out;
     const nowKey = nowMs != null && Number.isFinite(Number(nowMs)) ? this.hourKey(Number(nowMs), tz) : '';
     const probs = hourly.precipitation_probability;
     for (let k = 0; k < hourly.time.length; k++) {
-      if (!this.hourOnDate(hourly.time[k], dateStr, nowKey)) continue;
+      if (!this.hourInWindow(hourly.time[k], dateStr, nowKey)) continue;
       out.hasHours = true;
       const p = probs ? probs[k] : null;
       if (p != null && Number.isFinite(Number(p)) && (out.max == null || Number(p) > out.max)) out.max = Number(p);
@@ -343,8 +381,9 @@ const Utils = {
     }
     const a = on[0];
     const b = on[on.length - 1];
+    if (a === 'evening' && b === 'tonight') return { when: 'tonight', span: false };
     if (a === 'early' && b === 'midday') return { when: 'from the early morning until midday', span: true };
-    if (a === 'early' && b === 'morning') return { when: 'from the early morning through the morning', span: true };
+    if (a === 'early' && b === 'morning') return { when: 'through the morning', span: true };
     return { when: `from ${fromWord[a]} through ${fromWord[b]}`, span: true };
   },
 
@@ -378,46 +417,76 @@ const Utils = {
   },
 
   // Peak-chance hours for one day, split into sky hours and wet-icon hours.
-  // includeTonight adds the next date's 00:00–05:59. That is the Now card only.
-  explainChance(dateStr, hourly, nowMs, tz, iconCode, includeTonight) {
+  // Day cards pass sun { rise, set } and count sunrise to sunset only.
+  // includeTonight is the Now card: from now through the next date's 00:00–05:59.
+  explainChance(dateStr, hourly, nowMs, tz, iconCode, includeTonight, sun) {
     const out = {
-      when: '', span: false, dry: 0, wet: 0, wetWord: '', wetPrecip: 0, allSame: false, hours: 0,
+      when: '', stayWhen: '', span: false, dry: 0, wet: 0, wetWord: '', wetPrecip: 0,
+      allSame: false, staySame: false, tonightWet: false, hours: 0,
     };
     if (!dateStr || !hourly || !Array.isArray(hourly.time) || typeof WeatherIcons === 'undefined') return out;
     const nowKey = nowMs != null && Number.isFinite(Number(nowMs)) ? this.hourKey(Number(nowMs), tz) : '';
     const nextKey = includeTonight && nowKey ? this.nextDateKey(dateStr) : '';
+    const rise = sun && sun.rise;
+    const set = sun && sun.set;
     const picture = iconCode != null ? WeatherIcons._group(iconCode) : '';
     let same = picture !== '';
+    let staySame = picture !== '';
+    let stayHours = 0;
     const slots = [];
-    for (let k = 0; k < hourly.time.length; k++) {
-      const t = String(hourly.time[k] || '');
-      const onDate = this.hourOnDate(t, dateStr, nowKey);
-      const onTonight = nextKey && t.startsWith(nextKey + 'T') && this.hourInWindow(t, dateStr, nowKey);
-      if (!onDate && !onTonight) continue;
+    const take = (t) => {
+      if (includeTonight) return this.hourInWindow(t, dateStr, nowKey);
+      if (this.hourInDaylight(t, dateStr, nowKey, rise, set, tz)) return true;
+      return false;
+    };
+    const pushHour = (k, t, tonight) => {
       const code = hourly.weather_code ? hourly.weather_code[k] : null;
       const pop = hourly.precipitation_probability ? hourly.precipitation_probability[k] : null;
       const precip = hourly.precipitation && hourly.precipitation[k] != null ? Number(hourly.precipitation[k]) : 0;
       const snow = hourly.snowfall && hourly.snowfall[k] != null ? Number(hourly.snowfall[k]) : 0;
       const cloud = hourly.cloud_cover ? hourly.cloud_cover[k] : null;
-      if (code == null && pop == null) continue;
+      if (code == null && pop == null) return;
       const icon = WeatherIcons.hourIcon(code, pop, Number.isFinite(precip) ? precip : 0, Number.isFinite(snow) ? snow : 0, cloud);
-      if (onDate) {
-        out.hours += 1;
-        if (picture && WeatherIcons._group(icon) !== picture) same = false;
+      out.hours += 1;
+      if (picture && WeatherIcons._group(icon) !== picture) same = false;
+      if (!tonight) {
+        stayHours += 1;
+        if (picture && WeatherIcons._group(icon) !== picture) staySame = false;
       }
       const p = pop == null ? null : Number(pop);
-      if (p == null || !(p > 0)) continue;
+      if (p == null || !(p > 0)) return;
       const hour = Number(t.slice(11, 13));
-      if (!Number.isFinite(hour)) continue;
+      if (!Number.isFinite(hour)) return;
       slots.push({
         hour,
         pop: p,
         icon,
         precip: Number.isFinite(precip) ? precip : 0,
-        part: onTonight ? 'tonight' : this._clockPart(hour),
+        part: tonight ? 'tonight' : this._clockPart(hour),
       });
+    };
+    let sawDaylight = false;
+    for (let k = 0; k < hourly.time.length; k++) {
+      const t = String(hourly.time[k] || '');
+      const tonight = !!(nextKey && t.startsWith(nextKey + 'T') && this.hourInWindow(t, dateStr, nowKey));
+      if (!take(t) && !tonight) continue;
+      if (!tonight) sawDaylight = true;
+      pushHour(k, t, tonight && !this.hourOnDate(t, dateStr, nowKey));
+    }
+    if (!includeTonight && !sawDaylight && nowKey) {
+      slots.length = 0;
+      out.hours = 0;
+      same = picture !== '';
+      staySame = picture !== '';
+      stayHours = 0;
+      for (let k = 0; k < hourly.time.length; k++) {
+        const t = String(hourly.time[k] || '');
+        if (!this.hourOnDate(t, dateStr, nowKey)) continue;
+        pushHour(k, t, false);
+      }
     }
     out.allSame = out.hours > 0 && same;
+    out.staySame = stayHours > 0 && staySame;
     if (!slots.length) return out;
     const max = Math.max(...slots.map((s) => s.pop));
     const cut = max >= 50 ? 50 : Math.max(1, max - 15);
@@ -431,11 +500,14 @@ const Utils = {
       : this.partPhrase(this._partFlags(picked), !!nowKey);
     out.when = phrase.when;
     out.span = phrase.span;
+    const stay = picked.filter((s) => s.part !== 'tonight');
+    out.stayWhen = stay.length ? this.partPhrase(this._partFlags(stay), !!nowKey).when : '';
     const words = new Map();
     picked.forEach((s) => {
       if (WeatherIcons._isWet(s.icon)) {
         out.wet += 1;
         out.wetPrecip += s.precip;
+        if (s.part === 'tonight') out.tonightWet = true;
         const word = this.getWeatherDescription(s.icon).toLowerCase();
         words.set(word, (words.get(word) || 0) + 1);
       } else {
@@ -457,62 +529,127 @@ const Utils = {
     return desc;
   },
 
+  // Short name for a sentence. "Mostly mainly clear" is not how anyone talks.
+  spokenPicture(desc) {
+    const raw = this.pictureName(desc);
+    if (/^mainly clear$/i.test(raw) || /^clear$/i.test(raw)) return 'clear';
+    if (/^partly cloudy$/i.test(raw)) return 'cloudy';
+    if (/^rime fog$/i.test(raw)) return 'fog';
+    return raw.toLowerCase();
+  },
+
   chanceArticle(n) {
     return /^(8|11|18)/.test(String(n)) ? 'an' : 'a';
   },
 
-  // "All day" only when every hour is that picture. Otherwise name it as most of the day.
-  dayLead(name, allSame) {
-    return allSame ? `${name} all day` : `${name} for most of the day`;
+  _cap(text) {
+    const s = String(text || '');
+    if (!s) return '';
+    return s.charAt(0).toUpperCase() + s.slice(1);
   },
 
-  // Chance half of a day card or the Now card. No capital, no full stop.
-  // Over 50% on a sky day says whether those hours stay dry, so a clear icon
-  // and a high chance can both be true. The wet word is the icon's own word.
-  chanceClause(name, pop, explain, iconCode) {
-    if (!(pop > 0)) return '';
+  // How a high chance on a sky day actually falls. Names the wet word.
+  _skyFall(explain, word) {
+    const wet = explain && explain.wet ? explain.wet : 0;
+    const dry = explain && explain.dry ? explain.dry : 0;
+    if (wet === 0) return 'but none of it falls';
+    if (!word) return '';
+    if (dry > wet) return 'but it only falls now and then';
+    if (wet > dry) return 'and it falls for most of that time';
+    return '';
+  },
+
+  // Day card. Sunrise to sunset, then what the chance is of.
+  dayCardLine(dayName, desc, pop, explain, iconCode) {
+    const name = this.spokenPicture(desc);
+    const who = dayName && String(dayName).toLowerCase() !== 'today' ? dayName : 'today';
+    const mostly = !(explain && explain.allSame);
+    const lead = `From sunrise to sunset, ${who} is ${mostly ? `mostly ${name}` : name}.`;
+    if (!(pop > 0)) return lead;
     const n = Math.round(pop);
-    let when = explain && explain.when ? explain.when : '';
-    const allSame = !!(explain && explain.allSame);
-    if (allSame && when === 'through the day') when = '';
+    const art = this.chanceArticle(n);
+    const when = explain && explain.when ? explain.when : '';
     const dayWet = typeof WeatherIcons !== 'undefined' && iconCode != null && WeatherIcons._isWet(iconCode);
-    let clause = `${this.chanceArticle(n)} ${n}% chance`;
-    if (pop > 50 && dayWet) clause += ` of ${((explain && explain.wetWord) || name).toLowerCase()}`;
-    if (when) clause += ` ${when}`;
-    if (!(pop > 50) || dayWet || !explain || !when) return clause;
-    const wet = explain.wet || 0;
-    const dry = explain.dry || 0;
-    const word = explain.wetWord;
-    if (wet === 0) clause += ', though those hours stay dry';
-    else if (dry === 0 && word) clause += `, bringing ${word}`;
-    else if (word && dry > wet) clause += `, mostly dry, with ${word} at times`;
-    else if (word && wet > dry) clause += `, mostly ${word}, with some dry hours`;
-    else if (word) clause += `, half dry and half ${word}`;
-    return clause;
+    if (dayWet) {
+      const chance = when && when !== 'through the day' && !(explain && explain.allSame)
+        ? `The chance of ${name} is ${n}% ${when}.`
+        : `The chance of ${name} is ${n}%.`;
+      return `${lead} ${chance}`;
+    }
+    const word = (pop > 50 && explain && explain.wetWord) ? explain.wetWord : 'rain';
+    if (!(pop > 50)) {
+      return `${lead} There's ${art} ${n}% chance of rain${when ? ` ${when}` : ''}.`;
+    }
+    const fall = this._skyFall(explain, word);
+    const clock = this._cap(when);
+    if (fall) {
+      const open = clock ? `${clock} there's` : "There's";
+      return `${lead} ${open} ${art} ${n}% chance of ${word}, ${fall}.`;
+    }
+    const even = clock
+      ? `${clock} there's ${art} ${n}% chance of ${word}.`
+      : `There's ${art} ${n}% chance of ${word}.`;
+    return `${lead} ${even} It falls for some of that time and misses the rest.`;
   },
 
-  dayCardLine(desc, pop, explain, iconCode) {
-    const name = this.pictureName(desc);
-    const lead = this.dayLead(name, !!(explain && explain.allSame));
-    const clause = this.chanceClause(name, pop, explain, iconCode);
-    if (!clause) return `${lead}.`;
-    return `${lead}, with ${clause}.`;
-  },
-
-  // Now card. Same picture and the same chance wording, plus today's high, low,
-  // and the wet-hour total. It is not the day-card sentence.
+  // Now card. From this hour through tonight. Its own picture and chance.
   nowCardLine(desc, pop, explain, high, low, amountLabel, iconCode) {
-    const name = this.pictureName(desc);
+    const name = this.spokenPicture(desc);
     const allSame = !!(explain && explain.allSame);
-    let open = `Today is ${name.toLowerCase()} ${allSame ? 'all day' : 'for most of the day'}`;
-    if (high && high !== '—' && low && low !== '—') open += `, reaching ${high} and falling to ${low}`;
-    else if (high && high !== '—') open += `, reaching ${high}`;
-    else if (low && low !== '—') open += `, falling to ${low}`;
-    const clause = this.chanceClause(name, pop, explain, iconCode);
-    if (!clause) return `${open}.`;
-    let extra = clause.charAt(0).toUpperCase() + clause.slice(1);
-    if (amountLabel && explain && explain.wet > 0 && pop > 50) extra += `, around ${amountLabel}`;
-    return `${open}. ${extra}.`;
+    const staySame = explain && explain.staySame;
+    const wetPic = typeof WeatherIcons !== 'undefined' && iconCode != null && WeatherIcons._isWet(iconCode);
+    const when = explain && explain.when ? explain.when : '';
+    const stayWhen = explain && explain.stayWhen ? explain.stayWhen : '';
+    const wetWord = (explain && explain.wetWord) || name;
+    let first;
+    if (explain && explain.tonightWet && !wetPic) {
+      const stay = stayWhen && stayWhen !== 'through the day' ? ` ${stayWhen}` : '';
+      const sky = staySame ? name : `mostly ${name}`;
+      first = `From now through tonight, it stays ${sky}${stay} and turns to ${wetWord} tonight.`;
+    } else if (wetPic && allSame) {
+      const into = (when === 'in the evening' || when === 'this evening')
+        ? ' into this evening'
+        : (when && when !== 'through the day' && !/tonight/i.test(when) ? ` ${when}` : '');
+      first = `From now through tonight, the ${name} carries on${into}.`;
+    } else if (wetPic) {
+      const at = when && when !== 'through the day' ? ` ${when}` : '';
+      first = `From now through tonight, it turns to ${name}${at}.`;
+    } else {
+      const at = !(pop > 0) && when && when !== 'through the day' && !/tonight/i.test(when) ? ` ${when}` : '';
+      first = `From now through tonight, it stays ${allSame ? name : `mostly ${name}`}${at}.`;
+    }
+    let temps = '';
+    if (high && high !== '—' && low && low !== '—') temps = ` The high is ${high} and the low is ${low}.`;
+    else if (high && high !== '—') temps = ` The high is ${high}.`;
+    else if (low && low !== '—') temps = ` The low is ${low}.`;
+    if (!(pop > 0)) return `${first}${temps}`;
+    const n = Math.round(pop);
+    const art = this.chanceArticle(n);
+    const dayWet = wetPic;
+    const word = (pop > 50 && explain && explain.wetWord) ? explain.wetWord : (dayWet ? name : 'rain');
+    let chance;
+    if (explain && explain.tonightWet && !dayWet) {
+      chance = `There's ${art} ${n}% chance of ${word}`;
+      if (amountLabel && explain.wet > 0) chance += `, around ${amountLabel}`;
+      chance += '.';
+    } else if (dayWet) {
+      chance = `There's ${art} ${n}% chance of ${name}`;
+      if (amountLabel && explain && explain.wet > 0) chance += `, around ${amountLabel}`;
+      chance += '.';
+    } else if (!(pop > 50)) {
+      const tail = when ? ` ${when}` : '';
+      chance = `There's ${art} ${n}% chance of rain${tail}.`;
+    } else {
+      const fall = this._skyFall(explain, word);
+      const clock = this._cap(explain && explain.stayWhen ? explain.stayWhen : when);
+      if (fall) {
+        const open = clock ? `${clock} there's` : "There's";
+        chance = `${open} ${art} ${n}% chance of ${word}, ${fall}.`;
+      } else {
+        chance = `${clock ? `${clock} there's` : "There's"} ${art} ${n}% chance of ${word}. It falls for some of that time and misses the rest.`;
+      }
+    }
+    return `${first}${temps} ${chance}`;
   },
 
   formatTime(isoString, tz) {

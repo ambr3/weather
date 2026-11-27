@@ -272,19 +272,25 @@ Object.assign(UI, {
     return Utils.windowMaxPop(dateStr, hourly, fromMs, this._tz);
   },
 
-  // Day-row chance is the highest hourly chance on that calendar day,
-  // the same hours as the day icon. Today starts at the current hour.
-  // The daily maximum is a fallback only when today's window has no hourly
-  // stamps at all, or when a later day has no hourly chances — not when
-  // today's stamps exist but every probability is null.
+  // Day-row chance is the highest hourly chance from sunrise up to sunset,
+  // the same hours as the day icon. Today starts at the current hour, and
+  // falls back to hours still ahead after sunset. The daily maximum is a
+  // fallback only when today's window has no hourly stamps at all, or when
+  // a later day has no hourly chances — not when stamps exist with null pop.
   meaningfulDayPop(dateStr, daily, hourly) {
     const isToday = String(dateStr) === this._todayDateKey();
-    const span = this.daytimeMaxPop(dateStr, hourly, isToday ? Date.now() : null);
+    let rise;
+    let set;
     let dailyMax = null;
     if (daily && daily.time) {
       const idx = daily.time.indexOf(String(dateStr));
-      if (idx >= 0 && daily.precipitation_probability_max) dailyMax = daily.precipitation_probability_max[idx];
+      if (idx >= 0) {
+        rise = daily.sunrise && daily.sunrise[idx];
+        set = daily.sunset && daily.sunset[idx];
+        if (daily.precipitation_probability_max) dailyMax = daily.precipitation_probability_max[idx];
+      }
     }
+    const span = Utils.windowMaxPop(dateStr, hourly, isToday ? Date.now() : null, this._tz, rise, set);
     return Utils.resolveDayPop(span, isToday, dailyMax);
   },
 
@@ -303,9 +309,9 @@ Object.assign(UI, {
     return Math.round(prob);
   },
 
-  // Day row and day modal: the icon that appears on the most hours
-  // of that day, same hour icons as the hourly card. Today uses hours
-  // still ahead. Later days use that day's own hours.
+  // Day row and day modal: the icon on the most daylight hours (sunrise to
+  // sunset), same hour icons as the hourly card. Today drops past hours and
+  // falls back to hours still ahead after sunset.
   dayOutlook(dateStr, daily, hourly, units) {
     if (!daily || !daily.time || dateStr == null) return null;
     const idx = daily.time.indexOf(String(dateStr));
@@ -315,8 +321,10 @@ Object.assign(UI, {
     const snowSum = daily.snowfall_sum && daily.snowfall_sum[idx] != null ? daily.snowfall_sum[idx] : 0;
     const isToday = String(dateStr) === this._todayDateKey();
     const nowMs = isToday ? Date.now() : null;
-    const iconCode = WeatherIcons.dayIcon(dateStr, hourly, nowMs, this._tz);
-    const shown = WeatherIcons.dayShownAmount(dateStr, hourly, nowMs, this._tz);
+    const rise = daily.sunrise && daily.sunrise[idx];
+    const set = daily.sunset && daily.sunset[idx];
+    const iconCode = WeatherIcons.dayIcon(dateStr, hourly, nowMs, this._tz, rise, set);
+    const shown = WeatherIcons.dayShownAmount(dateStr, hourly, nowMs, this._tz, rise, set);
     return { idx, pop, rainSum, snowSum, iconCode, kind: shown.word, shown };
   },
 

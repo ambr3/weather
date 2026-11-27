@@ -299,13 +299,11 @@ const sunday = {
 };
 const sundayIcon = WeatherIcons.dayIcon('2026-11-29', sunday, null, 'UTC');
 const sundayExplain = Utils.explainChance('2026-11-29', sunday, null, 'UTC', sundayIcon, false);
-const sundayLine = Utils.dayCardLine(Utils.getWeatherDescription(sundayIcon), 66, sundayExplain, sundayIcon);
-const sundayWant = 'Clear for most of the day, with a 66% chance from the early morning through the morning, mostly dry, with light drizzle at times.';
+const sundayPop = Utils.windowMaxPop('2026-11-29', sunday, null, 'UTC').max;
+const sundayLine = Utils.dayCardLine('Sunday', Utils.getWeatherDescription(sundayIcon), sundayPop, sundayExplain, sundayIcon);
+const sundayWant = 'From sunrise to sunset, Sunday is mostly clear. In the morning there\'s a 59% chance of light drizzle, but it only falls now and then.';
 if (sundayLine !== sundayWant) {
-  console.error('dry high chance must stay sky, drizzle stays drizzle', sundayLine); process.exit(1);
-}
-if (/overnight|\brain\b|picture on the most|nothing falling/.test(sundayLine)) {
-  console.error('sunday line must stay plain, and must not say overnight or rain', sundayLine); process.exit(1);
+  console.error('daylight chance names light drizzle and says when it falls', sundayLine); process.exit(1);
 }
 const dryAfternoon = {
   time: ['2026-11-28T12:00','2026-11-28T13:00','2026-11-28T14:00','2026-11-28T15:00','2026-11-28T18:00'],
@@ -317,9 +315,9 @@ const dryAfternoon = {
 };
 const dryIcon = WeatherIcons.dayIcon('2026-11-28', dryAfternoon, null, 'UTC');
 const dryExplain = Utils.explainChance('2026-11-28', dryAfternoon, null, 'UTC', dryIcon, false);
-const dryLine = Utils.dayCardLine(Utils.getWeatherDescription(dryIcon), 70, dryExplain, dryIcon);
-if (dryLine !== 'Clear for most of the day, with a 70% chance around midday, though those hours stay dry.') {
-  console.error('a high chance with no rain keeps the sky and says so', dryLine); process.exit(1);
+const dryLine = Utils.dayCardLine('Sunday', Utils.getWeatherDescription(dryIcon), 70, dryExplain, dryIcon);
+if (dryLine !== 'From sunrise to sunset, Sunday is clear. Around midday there\'s a 70% chance of rain, but none of it falls.') {
+  console.error('a high chance with nothing falling says so', dryLine); process.exit(1);
 }
 const wetDay = {
   time: ['2026-11-28T09:00','2026-11-28T12:00','2026-11-28T15:00','2026-11-28T18:00'],
@@ -331,19 +329,46 @@ const wetDay = {
 };
 const wetIcon = WeatherIcons.dayIcon('2026-11-28', wetDay, null, 'UTC');
 const wetExplain = Utils.explainChance('2026-11-28', wetDay, null, 'UTC', wetIcon, false);
-const wetLine = Utils.dayCardLine(Utils.getWeatherDescription(wetIcon), 90, wetExplain, wetIcon);
-if (wetLine !== 'Rain all day, with a 90% chance of rain.') {
-  console.error('a wet day may name rain on the chance', wetLine); process.exit(1);
+const wetLine = Utils.dayCardLine('Saturday', Utils.getWeatherDescription(wetIcon), 90, wetExplain, wetIcon);
+if (wetLine !== 'From sunrise to sunset, Saturday is rain. The chance of rain is 90%.') {
+  console.error('a wet day names the rain', wetLine); process.exit(1);
 }
-const nowSunday = Utils.nowCardLine('Clear sky', 66, sundayExplain, '8°C', '5°C', '0.8 mm', sundayIcon);
-if (!/^Today is clear for most of the day, reaching 8°C and falling to 5°C\. A 66% chance from the early morning through the morning, mostly dry, with light drizzle at times, around 0\.8 mm\.$/.test(nowSunday)) {
-  console.error('now card uses the same chance wording, plus the wet total', nowSunday); process.exit(1);
+const nowSunday = Utils.nowCardLine('Clear sky', 66, {
+  when: 'this afternoon', stayWhen: 'this afternoon', allSame: false, staySame: true,
+  dry: 4, wet: 2, wetWord: 'light drizzle', tonightWet: true, hours: 8,
+}, '8°C', '5°C', '0.8 mm', 0);
+if (nowSunday !== 'From now through tonight, it stays clear this afternoon and turns to light drizzle tonight. The high is 8°C and the low is 5°C. There\'s a 66% chance of light drizzle, around 0.8 mm.') {
+  console.error('now card keeps tonight on its own sentence', nowSunday); process.exit(1);
 }
-const evenLine = Utils.dayCardLine('Clear sky', 65, {
-  when: 'from the early morning through the morning', allSame: false, dry: 3, wet: 3, wetWord: 'light drizzle', hours: 24,
+const evenLine = Utils.dayCardLine('Sunday', 'Clear sky', 65, {
+  when: 'in the morning', allSame: false, dry: 3, wet: 3, wetWord: 'light drizzle', hours: 12,
 }, 0);
-if (evenLine !== 'Clear for most of the day, with a 65% chance from the early morning through the morning, half dry and half light drizzle.') {
-  console.error('an even dry and wet split stays plain', evenLine); process.exit(1);
+if (evenLine !== 'From sunrise to sunset, Sunday is mostly clear. In the morning there\'s a 65% chance of light drizzle. It falls for some of that time and misses the rest.') {
+  console.error('an even split says some falls and some misses', evenLine); process.exit(1);
+}
+const saturday = {
+  time: [
+    '2026-11-28T00:00','2026-11-28T03:00','2026-11-28T06:00',
+    '2026-11-28T08:00','2026-11-28T10:00','2026-11-28T12:00','2026-11-28T14:00','2026-11-28T16:00',
+    '2026-11-28T20:00','2026-11-28T22:00',
+  ],
+  weather_code: [3,3,3, 51,51,51,51,51, 3,3],
+  precipitation_probability: [10,20,30, 80,90,100,100,95, 20,10],
+  precipitation: [0,0,0, 0.2,0.3,0.4,0.4,0.2, 0,0],
+  snowfall: [0,0,0, 0,0,0,0,0, 0,0],
+  cloud_cover: [100,100,90, 90,90,95,95,90, 100,100],
+};
+const satRise = '2026-11-28T07:00';
+const satSet = '2026-11-28T17:00';
+const satIcon = WeatherIcons.dayIcon('2026-11-28', saturday, null, 'UTC', satRise, satSet);
+const satExplain = Utils.explainChance('2026-11-28', saturday, null, 'UTC', satIcon, false, { rise: satRise, set: satSet });
+const satPop = Utils.windowMaxPop('2026-11-28', saturday, null, 'UTC', satRise, satSet).max;
+const satLine = Utils.dayCardLine('Saturday', Utils.getWeatherDescription(satIcon), satPop, satExplain, satIcon);
+if (satIcon !== 51 || WeatherIcons.dayPrecipWord('2026-11-28', saturday, null, 'UTC', satRise, satSet) !== 'drizzle') {
+  console.error('daylight drizzle sets the day, the night cloud does not', satIcon); process.exit(1);
+}
+if (satLine !== 'From sunrise to sunset, Saturday is light drizzle. The chance of light drizzle is 100%.') {
+  console.error('saturday sentence names light drizzle', satLine); process.exit(1);
 }
 const allDayHours = {
   time: ['2026-11-19T08:00', '2026-11-19T14:00', '2026-11-19T20:00'],
@@ -513,8 +538,8 @@ if (WeatherIcons.dayIcon('2026-11-19', skyAhead) !== 3) {
   process.exit(1);
 }
 const at1500 = Utils.parseLocal('2026-11-19T15:00', 'UTC').getTime();
-if (WeatherIcons.dayIcon('2026-11-19', skyAhead, at1500, 'UTC') !== 0) {
-  console.error('remaining hours vote together, including the night hour', WeatherIcons.dayIcon('2026-11-19', skyAhead, at1500, 'UTC'));
+if (WeatherIcons.dayIcon('2026-11-19', skyAhead, at1500, 'UTC') !== 1) {
+  console.error('daylight hour still ahead votes, the night hour does not', WeatherIcons.dayIcon('2026-11-19', skyAhead, at1500, 'UTC'));
   process.exit(1);
 }
 const at2100 = Utils.parseLocal('2026-11-19T21:00', 'UTC').getTime();
@@ -553,8 +578,8 @@ if (WeatherIcons.dayPrecipWord('2026-11-27', mostlyCloud) !== '') {
   console.error('cloud day must not say rain', WeatherIcons.dayPrecipWord('2026-11-27', mostlyCloud));
   process.exit(1);
 }
-// Pre-sunrise hours are part of the same vote. Drizzle here is the most
-// common picture only because those night hours count.
+// Pre-sunrise drizzle must not set the day when daylight hours are clear.
+// Daylight drizzle still sets the day when it outnumbers clear hours.
 const morningDrizzle = {
   time: ['2026-11-27T04:00', '2026-11-27T05:00', '2026-11-27T06:00', '2026-11-27T07:00', '2026-11-27T08:00', '2026-11-27T09:00', '2026-11-27T12:00', '2026-11-27T13:00'],
   is_day: [0, 0, 0, 0, 0, 1, 1, 1],
@@ -564,12 +589,38 @@ const morningDrizzle = {
   snowfall: [0, 0, 0, 0, 0, 0, 0, 0],
   cloud_cover: [90, 90, 90, 90, 80, 70, 20, 15],
 };
-if (WeatherIcons.dayIcon('2026-11-27', morningDrizzle) !== 51) {
-  console.error('pre-sunrise hours must vote with the rest of the day', WeatherIcons.dayIcon('2026-11-27', morningDrizzle));
+if (WeatherIcons.dayIcon('2026-11-27', morningDrizzle, null, 'UTC', '2026-11-27T10:00', '2026-11-27T17:00') !== 1) {
+  console.error('pre-sunrise drizzle must not set a clear daylight day', WeatherIcons.dayIcon('2026-11-27', morningDrizzle, null, 'UTC', '2026-11-27T10:00', '2026-11-27T17:00'));
   process.exit(1);
 }
-if (WeatherIcons.dayPrecipWord('2026-11-27', morningDrizzle) !== 'rain') {
-  console.error('drizzle icon says rain', WeatherIcons.dayPrecipWord('2026-11-27', morningDrizzle));
+if (WeatherIcons.dayPrecipWord('2026-11-27', morningDrizzle, null, 'UTC', '2026-11-27T10:00', '2026-11-27T17:00') !== '') {
+  console.error('pre-sunrise drizzle must not add a drizzle word to a clear daylight day');
+  process.exit(1);
+}
+if (WeatherIcons.dayIcon('2026-11-27', morningDrizzle) !== 51) {
+  console.error('daylight drizzle wins when it outnumbers clear hours', WeatherIcons.dayIcon('2026-11-27', morningDrizzle));
+  process.exit(1);
+}
+if (WeatherIcons.dayPrecipWord('2026-11-27', morningDrizzle) !== 'drizzle') {
+  console.error('drizzle day says drizzle', WeatherIcons.dayPrecipWord('2026-11-27', morningDrizzle));
+  process.exit(1);
+}
+if (Utils.partPhrase({ evening: true, tonight: true }, true).when !== 'tonight') {
+  console.error('evening through tonight collapses to tonight', Utils.partPhrase({ evening: true, tonight: true }, true));
+  process.exit(1);
+}
+const nowSkyCheck = Utils.nowCardLine('Overcast', 31, {
+  allSame: false,
+  staySame: false,
+  when: 'tonight',
+  stayWhen: 'this evening',
+  wet: 0,
+  dry: 4,
+  wetWord: '',
+  tonightWet: false,
+}, '5°C', '5°C', '', 3);
+if (nowSkyCheck !== 'From now through tonight, it stays mostly overcast. The high is 5°C and the low is 5°C. There\'s a 31% chance of rain tonight.') {
+  console.error('now card must not repeat tonight in the opening sentence', nowSkyCheck);
   process.exit(1);
 }
 const oneShower = {
@@ -622,8 +673,8 @@ if (WeatherIcons.dayIcon('2026-11-19', spills, spillNow, 'UTC') !== 3) {
   console.error('tomorrow morning must not set today', WeatherIcons.dayIcon('2026-11-19', spills, spillNow, 'UTC'));
   process.exit(1);
 }
-if (WeatherIcons.dayIcon('2026-11-20', spills) !== 51) {
-  console.error('next morning belongs to the next day', WeatherIcons.dayIcon('2026-11-20', spills));
+if (WeatherIcons.dayIcon('2026-11-20', spills) !== 3) {
+  console.error('night hours must not set a later day', WeatherIcons.dayIcon('2026-11-20', spills));
   process.exit(1);
 }
 if (Utils.windowMaxPop('2026-11-19', spills, spillNow, 'UTC').max !== 10) {
@@ -635,7 +686,7 @@ if (shownSky.word !== '' || shownSky.precip !== 0) {
   console.error('a sky day must not report rain amount', shownSky); process.exit(1);
 }
 const shownRain = WeatherIcons.dayShownAmount('2026-11-19', allDayHours);
-if (shownRain.word !== 'rain' || shownRain.precip !== 4) {
+if (shownRain.word !== 'rain' || shownRain.precip !== 3) {
   console.error('rain amount must sum the hours that show rain', shownRain); process.exit(1);
 }
 const nowHour = Utils.parseLocal('2026-11-19T15:00', 'UTC').getTime();

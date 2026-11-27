@@ -121,21 +121,21 @@ const WeatherIcons = {
     return best;
   },
 
-  // Day icon for every day: the picture that appears on the most hours
-  // of that day, using the same hourIcon as the hourly card. Hours before
-  // sunrise and after sunset count. Codes that share a picture count together,
-  // so several drizzle codes are one icon. A tie keeps the sky, then the
-  // lower code. One hour does not beat a picture that appears more often.
-  // nowMs (today only) keeps hours still ahead. Omit it for a later day.
-  dayIcon(dateStr, hourly, nowMs, tz) {
-    if (!hourly || !hourly.time || !hourly.weather_code || dateStr == null) return 3;
-    const nowKey = this._nowKey(nowMs, tz);
+  // Short word beside a day chance. Drizzle stays drizzle.
+  pictureWord(code) {
+    const g = this._group(code);
+    if (g === 'drizzle') return 'drizzle';
+    if (!this._isWet(code)) return '';
+    return this.precipWord(code);
+  },
+
+  // Most common picture among hours accepted by `keep`. Null when none qualify.
+  _vote(hourly, keep) {
+    if (!hourly || !hourly.time || !hourly.weather_code || typeof keep !== 'function') return null;
     const groups = new Map();
+    let n = 0;
     for (let k = 0; k < hourly.time.length; k++) {
-      const onDate = typeof Utils !== 'undefined' && Utils.hourOnDate
-        ? Utils.hourOnDate(hourly.time[k], dateStr, nowKey)
-        : String(hourly.time[k] || '').startsWith(String(dateStr) + 'T');
-      if (!onDate) continue;
+      if (!keep(hourly.time[k])) continue;
       const wc = hourly.weather_code[k];
       if (wc == null) continue;
       const pop = hourly.precipitation_probability ? hourly.precipitation_probability[k] : null;
@@ -150,8 +150,10 @@ const WeatherIcons = {
         groups.set(name, g);
       }
       g.count += 1;
+      n += 1;
       g.codes.set(icon, (g.codes.get(icon) || 0) + 1);
     }
+    if (!n) return null;
     let best = null;
     groups.forEach((g) => {
       if (!best || g.count > best.count) {
@@ -166,40 +168,78 @@ const WeatherIcons = {
       if (bestWet && !wet) best = g;
       else if (wet === bestWet && mode < bestMode) best = g;
     });
-    if (!best) return 3;
+    if (!best) return null;
     return this._modeCode(best.codes);
   },
 
-  // Word beside the day chance. It matches the day icon. A sky icon has no
-  // rain/snow/thunder word. Drizzle counts as rain.
-  dayPrecipWord(dateStr, hourly, nowMs, tz) {
-    const icon = this.dayIcon(dateStr, hourly, nowMs, tz);
-    if (!this._isWet(icon)) return '';
-    return this.precipWord(icon);
+  // Day icon: the picture on the most hours from sunrise to sunset.
+  // Today drops hours already past. After sunset, the hours still ahead vote.
+  // A later day does not let the night set the picture.
+  dayIcon(dateStr, hourly, nowMs, tz, riseIso, setIso) {
+    if (!hourly || !hourly.time || !hourly.weather_code || dateStr == null) return 3;
+    const nowKey = this._nowKey(nowMs, tz);
+    const inDay = (stamp) => typeof Utils !== 'undefined' && Utils.hourInDaylight
+      ? Utils.hourInDaylight(stamp, dateStr, nowKey, riseIso, setIso, tz)
+      : String(stamp || '').startsWith(String(dateStr) + 'T');
+    const day = this._vote(hourly, inDay);
+    if (day != null) return day;
+    if (!nowKey) return 3;
+    const rest = this._vote(hourly, (stamp) => typeof Utils !== 'undefined' && Utils.hourOnDate
+      ? Utils.hourOnDate(stamp, dateStr, nowKey)
+      : false);
+    return rest == null ? 3 : rest;
   },
 
-  // Amount on the hours whose icon uses the day word. Past hours and sky
-  // hours are not included. precip is millimetres, snow is the snowfall sum.
-  dayShownAmount(dateStr, hourly, nowMs, tz) {
-    const word = this.dayPrecipWord(dateStr, hourly, nowMs, tz);
+  // Now card picture: hours from now through tonight, not sunrise to sunset.
+  nowIcon(dateStr, hourly, nowMs, tz) {
+    if (!hourly || !hourly.time || !hourly.weather_code || dateStr == null) return 3;
+    const nowKey = this._nowKey(nowMs, tz);
+    const icon = this._vote(hourly, (stamp) => typeof Utils !== 'undefined' && Utils.hourInWindow
+      ? Utils.hourInWindow(stamp, dateStr, nowKey)
+      : false);
+    return icon == null ? 3 : icon;
+  },
+
+  // Word beside the day chance. It matches the day icon. A sky icon has no
+  // rain, drizzle, snow, or thunder word.
+  dayPrecipWord(dateStr, hourly, nowMs, tz, riseIso, setIso) {
+    const icon = this.dayIcon(dateStr, hourly, nowMs, tz, riseIso, setIso);
+    return this.pictureWord(icon);
+  },
+
+  // Amount on the daylight hours whose icon uses the day word.
+  dayShownAmount(dateStr, hourly, nowMs, tz, riseIso, setIso) {
+    const word = this.dayPrecipWord(dateStr, hourly, nowMs, tz, riseIso, setIso);
     const out = { word, precip: 0, snow: 0 };
     if (!word || !hourly || !hourly.time || !hourly.weather_code || dateStr == null) return out;
     const nowKey = this._nowKey(nowMs, tz);
-    for (let k = 0; k < hourly.time.length; k++) {
-      const onDate = typeof Utils !== 'undefined' && Utils.hourOnDate
-        ? Utils.hourOnDate(hourly.time[k], dateStr, nowKey)
-        : String(hourly.time[k] || '').startsWith(String(dateStr) + 'T');
-      if (!onDate) continue;
-      const wc = hourly.weather_code[k];
-      if (wc == null) continue;
-      const pop = hourly.precipitation_probability ? hourly.precipitation_probability[k] : null;
-      const precip = hourly.precipitation && hourly.precipitation[k] != null ? Number(hourly.precipitation[k]) : 0;
-      const snow = hourly.snowfall && hourly.snowfall[k] != null ? Number(hourly.snowfall[k]) : 0;
-      const cloud = hourly.cloud_cover ? hourly.cloud_cover[k] : null;
-      const icon = this.hourIcon(wc, pop, precip, snow, cloud);
-      if (!this._isWet(icon) || this.precipWord(icon) !== word) continue;
-      if (Number.isFinite(precip)) out.precip += precip;
-      if (Number.isFinite(snow)) out.snow += snow;
+    const inDay = (stamp) => typeof Utils !== 'undefined' && Utils.hourInDaylight
+      ? Utils.hourInDaylight(stamp, dateStr, nowKey, riseIso, setIso, tz)
+      : false;
+    let any = false;
+    const add = (stamp) => {
+      if (typeof Utils !== 'undefined' && Utils.hourInDaylight) return inDay(stamp);
+      return false;
+    };
+    const sum = (keep) => {
+      for (let k = 0; k < hourly.time.length; k++) {
+        if (!keep(hourly.time[k])) continue;
+        any = true;
+        const wc = hourly.weather_code[k];
+        if (wc == null) continue;
+        const pop = hourly.precipitation_probability ? hourly.precipitation_probability[k] : null;
+        const precip = hourly.precipitation && hourly.precipitation[k] != null ? Number(hourly.precipitation[k]) : 0;
+        const snow = hourly.snowfall && hourly.snowfall[k] != null ? Number(hourly.snowfall[k]) : 0;
+        const cloud = hourly.cloud_cover ? hourly.cloud_cover[k] : null;
+        const icon = this.hourIcon(wc, pop, precip, snow, cloud);
+        if (this.pictureWord(icon) !== word) continue;
+        if (Number.isFinite(precip)) out.precip += precip;
+        if (Number.isFinite(snow)) out.snow += snow;
+      }
+    };
+    sum(add);
+    if (!any && nowKey) {
+      sum((stamp) => Utils.hourOnDate(stamp, dateStr, nowKey));
     }
     return out;
   },
